@@ -1,0 +1,379 @@
+{
+  "wall_seconds": 733.9,
+  "configs": {
+    "primary": {
+      "scheme": "stationary",
+      "block_bars": 96,
+      "paths": 5000,
+      "net_return_pct": {
+        "q05": -0.8496,
+        "q50": 0.4402,
+        "q95": 3.8265,
+        "mean": 0.8349
+      },
+      "sharpe_ann": {
+        "q05": -3.8726,
+        "q50": 1.5198,
+        "q95": 6.4527,
+        "mean": 1.4265
+      },
+      "max_drawdown_pct": {
+        "q05": 0.2664,
+        "q50": 0.8364,
+        "q95": 1.6741,
+        "mean": 0.8838
+      },
+      "time_under_water_days": {
+        "q05": 3.3323,
+        "q50": 14.3854,
+        "q95": 30.5312,
+        "mean": 15.635
+      },
+      "cvar95_daily_pct": {
+        "q05": -0.4803,
+        "q50": -0.2706,
+        "q95": -0.0628,
+        "mean": -0.2748
+      },
+      "p_net_negative": 0.3224,
+      "p_drawdown_gt_3pct": 0.0002,
+      "p_daily_loss_limit_breach": 0.002,
+      "p_no_trades": 0.023,
+      "liquidations": 0
+    },
+    "moving_16": {
+      "scheme": "moving",
+      "block_bars": 16,
+      "paths": 1000,
+      "net_return_pct": {
+        "q05": -0.7403,
+        "q50": 0.1397,
+        "q95": 2.684,
+        "mean": 0.4411
+      },
+      "sharpe_ann": {
+        "q05": -4.2569,
+        "q50": 0.9004,
+        "q95": 5.7302,
+        "mean": 0.7086
+      },
+      "max_drawdown_pct": {
+        "q05": 0.0,
+        "q50": 0.6894,
+        "q95": 1.4745,
+        "mean": 0.7181
+      },
+      "time_under_water_days": {
+        "q05": 0.0,
+        "q50": 15.3021,
+        "q95": 30.699,
+        "mean": 15.6443
+      },
+      "cvar95_daily_pct": {
+        "q05": -0.4159,
+        "q50": -0.2212,
+        "q95": 0.0,
+        "mean": -0.2197
+      },
+      "p_net_negative": 0.374,
+      "p_drawdown_gt_3pct": 0.0,
+      "p_daily_loss_limit_breach": 0.0,
+      "p_no_trades": 0.063,
+      "liquidations": 0
+    },
+    "moving_96": {
+      "scheme": "moving",
+      "block_bars": 96,
+      "paths": 1000,
+      "net_return_pct": {
+        "q05": -0.8279,
+        "q50": 0.4521,
+        "q95": 3.6519,
+        "mean": 0.8554
+      },
+      "sharpe_ann": {
+        "q05": -3.8505,
+        "q50": 1.667,
+        "q95": 6.6533,
+        "mean": 1.5403
+      },
+      "max_drawdown_pct": {
+        "q05": 0.2138,
+        "q50": 0.8303,
+        "q95": 1.6353,
+        "mean": 0.8722
+      },
+      "time_under_water_days": {
+        "q05": 2.4995,
+        "q50": 14.3958,
+        "q95": 30.4594,
+        "mean": 15.3226
+      },
+      "cvar95_daily_pct": {
+        "q05": -0.4877,
+        "q50": -0.2696,
+        "q95": -0.0333,
+        "mean": -0.27
+      },
+      "p_net_negative": 0.297,
+      "p_drawdown_gt_3pct": 0.0,
+      "p_daily_loss_limit_breach": 0.007,
+      "p_no_trades": 0.033,
+      "liquidations": 0
+    },
+    "moving_288": {
+      "scheme": "moving",
+      "block_bars": 288,
+      "paths": 1000,
+      "net_return_pct": {
+        "q05": -0.8876,
+        "q50": 0.3238,
+        "q95": 3.5881,
+        "mean": 0.7317
+      },
+      "sharpe_ann": {
+        "q05": -3.9651,
+        "q50": 1.2147,
+        "q95": 6.252,
+        "mean": 1.1639
+      },
+      "max_drawdown_pct": {
+        "q05": 0.2377,
+        "q50": 0.8587,
+        "q95": 1.6638,
+        "mean": 0.8985
+      },
+      "time_under_water_days": {
+        "q05": 3.5089,
+        "q50": 15.2083,
+        "q95": 30.9224,
+        "mean": 16.2528
+      },
+      "cvar95_daily_pct": {
+        "q05": -0.4924,
+        "q50": -0.2757,
+        "q95": -0.0486,
+        "mean": -0.2801
+      },
+      "p_net_negative": 0.351,
+      "p_drawdown_gt_3pct": 0.001,
+      "p_daily_loss_limit_breach": 0.005,
+      "p_no_trades": 0.024,
+      "liquidations": 0
+    },
+    "stationary_16": {
+      "scheme": "stationary",
+      "block_bars": 16,
+      "paths": 1000,
+      "net_return_pct": {
+        "q05": -0.8251,
+        "q50": 0.122,
+        "q95": 2.6828,
+        "mean": 0.4383
+      },
+      "sharpe_ann": {
+        "q05": -4.3483,
+        "q50": 0.8948,
+        "q95": 5.79,
+        "mean": 0.7591
+      },
+      "max_drawdown_pct": {
+        "q05": 0.0,
+        "q50": 0.7005,
+        "q95": 1.4989,
+        "mean": 0.7278
+      },
+      "time_under_water_days": {
+        "q05": 0.0,
+        "q50": 14.901,
+        "q95": 30.9797,
+        "mean": 15.4426
+      },
+      "cvar95_daily_pct": {
+        "q05": -0.4178,
+        "q50": -0.2257,
+        "q95": 0.0,
+        "mean": -0.222
+      },
+      "p_net_negative": 0.377,
+      "p_drawdown_gt_3pct": 0.001,
+      "p_daily_loss_limit_breach": 0.002,
+      "p_no_trades": 0.069,
+      "liquidations": 0
+    },
+    "stationary_288": {
+      "scheme": "stationary",
+      "block_bars": 288,
+      "paths": 1000,
+      "net_return_pct": {
+        "q05": -0.8301,
+        "q50": 0.4477,
+        "q95": 3.8058,
+        "mean": 0.8801
+      },
+      "sharpe_ann": {
+        "q05": -3.7647,
+        "q50": 1.5341,
+        "q95": 6.3659,
+        "mean": 1.3999
+      },
+      "max_drawdown_pct": {
+        "q05": 0.2951,
+        "q50": 0.8851,
+        "q95": 1.6694,
+        "mean": 0.9265
+      },
+      "time_under_water_days": {
+        "q05": 3.5307,
+        "q50": 14.9219,
+        "q95": 30.7714,
+        "mean": 15.9582
+      },
+      "cvar95_daily_pct": {
+        "q05": -0.5226,
+        "q50": -0.2823,
+        "q95": -0.0703,
+        "mean": -0.2887
+      },
+      "p_net_negative": 0.331,
+      "p_drawdown_gt_3pct": 0.001,
+      "p_daily_loss_limit_breach": 0.007,
+      "p_no_trades": 0.018,
+      "liquidations": 0
+    }
+  },
+  "portfolio_bootstrap": {
+    "moving_1d": {
+      "net_return_pct": {
+        "q05": -0.6134,
+        "q50": 1.99,
+        "q95": 4.6444,
+        "mean": 1.9992
+      },
+      "sharpe_ann": {
+        "q05": -1.1901,
+        "q50": 3.7207,
+        "q95": 8.344,
+        "mean": 3.693
+      },
+      "max_drawdown_pct": {
+        "q05": 0.4443,
+        "q50": 0.8739,
+        "q95": 1.9144,
+        "mean": 0.9835
+      },
+      "p_net_negative": 0.0978,
+      "p_drawdown_gt_3pct": 0.0016
+    },
+    "stationary_1d": {
+      "net_return_pct": {
+        "q05": -0.6063,
+        "q50": 1.8831,
+        "q95": 4.548,
+        "mean": 1.906
+      },
+      "sharpe_ann": {
+        "q05": -1.1742,
+        "q50": 3.5381,
+        "q95": 8.2625,
+        "mean": 3.5334
+      },
+      "max_drawdown_pct": {
+        "q05": 0.4324,
+        "q50": 0.881,
+        "q95": 1.9051,
+        "mean": 0.9841
+      },
+      "p_net_negative": 0.1112,
+      "p_drawdown_gt_3pct": 0.002
+    },
+    "moving_3d": {
+      "net_return_pct": {
+        "q05": -0.3324,
+        "q50": 1.6985,
+        "q95": 3.7864,
+        "mean": 1.6975
+      },
+      "sharpe_ann": {
+        "q05": -0.6055,
+        "q50": 3.2411,
+        "q95": 7.3297,
+        "mean": 3.2467
+      },
+      "max_drawdown_pct": {
+        "q05": 0.4645,
+        "q50": 0.8226,
+        "q95": 1.6494,
+        "mean": 0.9021
+      },
+      "p_net_negative": 0.0868,
+      "p_drawdown_gt_3pct": 0.0006
+    },
+    "stationary_3d": {
+      "net_return_pct": {
+        "q05": -0.4139,
+        "q50": 1.8669,
+        "q95": 4.1468,
+        "mean": 1.859
+      },
+      "sharpe_ann": {
+        "q05": -0.7828,
+        "q50": 3.5137,
+        "q95": 7.8198,
+        "mean": 3.4905
+      },
+      "max_drawdown_pct": {
+        "q05": 0.4615,
+        "q50": 0.8132,
+        "q95": 1.6756,
+        "mean": 0.9028
+      },
+      "p_net_negative": 0.0866,
+      "p_drawdown_gt_3pct": 0.0014
+    },
+    "moving_7d": {
+      "net_return_pct": {
+        "q05": -0.65,
+        "q50": 1.6666,
+        "q95": 3.9832,
+        "mean": 1.6505
+      },
+      "sharpe_ann": {
+        "q05": -1.2418,
+        "q50": 3.1998,
+        "q95": 7.8154,
+        "mean": 3.182
+      },
+      "max_drawdown_pct": {
+        "q05": 0.4645,
+        "q50": 0.8519,
+        "q95": 1.7877,
+        "mean": 0.9486
+      },
+      "p_net_negative": 0.121,
+      "p_drawdown_gt_3pct": 0.0012
+    },
+    "stationary_7d": {
+      "net_return_pct": {
+        "q05": -0.4927,
+        "q50": 1.8505,
+        "q95": 4.1,
+        "mean": 1.8552
+      },
+      "sharpe_ann": {
+        "q05": -0.8817,
+        "q50": 3.4638,
+        "q95": 7.8096,
+        "mean": 3.4892
+      },
+      "max_drawdown_pct": {
+        "q05": 0.4486,
+        "q50": 0.8656,
+        "q95": 1.6316,
+        "mean": 0.9024
+      },
+      "p_net_negative": 0.0924,
+      "p_drawdown_gt_3pct": 0.0004
+    }
+  }
+}
