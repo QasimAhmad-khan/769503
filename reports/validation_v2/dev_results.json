@@ -1,0 +1,100 @@
+{
+  "eligible": [
+    "V2T07",
+    "V2T09",
+    "V2T15",
+    "V2T17",
+    "V2T18",
+    "V2T19",
+    "V2T21",
+    "V2T22",
+    "V2T25",
+    "V2T26"
+  ],
+  "walk_forward": [
+    {
+      "fold": [
+        100,
+        109
+      ],
+      "selected": "V2T25",
+      "oos_return_pct": -0.2207
+    },
+    {
+      "fold": [
+        109,
+        118
+      ],
+      "selected": "V2T25",
+      "oos_return_pct": -0.4188
+    },
+    {
+      "fold": [
+        118,
+        127
+      ],
+      "selected": "V2T25",
+      "oos_return_pct": 0.472
+    },
+    {
+      "fold": [
+        127,
+        136
+      ],
+      "selected": "V2T25",
+      "oos_return_pct": 1.6013
+    },
+    {
+      "fold": [
+        136,
+        145
+      ],
+      "selected": "V2T25",
+      "oos_return_pct": 0.4314
+    }
+  ],
+  "oos_daily_mean": 0.000415,
+  "oos_ci90": [
+    -0.0001,
+    0.0009
+  ],
+  "oos_sharpe_ann": 3.4634819615911234,
+  "pbo": {
+    "pbo": 0.0198,
+    "combinations": 252,
+    "median_logit": 3.2958,
+    "best_is_below_median_oos_fraction": 0.0198,
+    "blocks": 10,
+    "assumptions": "CSCV with contiguous time blocks; performance = mean daily PnL per block set"
+  },
+  "v1_trials": 12,
+  "candidate": {
+    "hypothesis": "volatility_breakout_v1",
+    "params": {
+      "c": 0.8,
+      "m": 96,
+      "n": 16
+    },
+    "round": 0,
+    "trial_id": "V2T25",
+    "train_sharpe": 4.6347,
+    "train_net_pct": 5.9619,
+    "train_trades": 126,
+    "train_effective_trades": 90,
+    "train_eligible": true,
+    "dev_sharpe": 3.4634819615911234,
+    "dev_net_pct": 1.8707,
+    "dev_effective_trades": 66,
+    "dsr": {
+      "dsr": 0.9583,
+      "sharpe_daily": 0.2266,
+      "sr0_daily": 0.0901,
+      "trials": 39,
+      "T_days": 134,
+      "skew": 1.098,
+      "kurtosis": 6.942,
+      "assumptions": "daily Sharpe; trials = all logged parameter sets; iid-ish daily returns (weak with few days)"
+    },
+    "n_trials_total": 39
+  }
+}

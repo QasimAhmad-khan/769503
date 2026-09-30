@@ -1,0 +1,536 @@
+{
+  "costs": {
+    "execution_mc": {
+      "draws": 5000,
+      "rho": 0.6,
+      "seed": 77
+    },
+    "fill_prob": 1.0,
+    "funding": "8-hourly on position",
+    "latency_bars": 0,
+    "liquidity_frac_of_bar_volume": 0.02,
+    "slippage_bps_per_leg": 2.0,
+    "spread": "data half-spread per leg",
+    "stop_gap_bps": 10.0,
+    "taker_fee_rate": 0.0005
+  },
+  "data": {
+    "availability": {
+      "bars_15m": "bar end + 1 s",
+      "funding_estimate": "known at bar end, settled 8-hourly",
+      "onchain_finalized": "block time + 6 confirmations (3600 s); stress tests add delay",
+      "spread": "top of book at bar end"
+    },
+    "days": 180,
+    "fixture_sha256": "ed1bc4664bd7ec72ccb8ba404bde46ededf2a0a5dd9820160593b3491a93ae50",
+    "kind": "synthetic",
+    "real_sources_required": {
+      "onchain": "forward capture with finality; excluded from backtests until availability is proven",
+      "trades_l2_marks_funding": "exchange capture with receive timestamps; dates must mirror the split below"
+    },
+    "seed": 4242,
+    "start": "2026-06-01T00:00:00+00:00"
+  },
+  "dates_days": {
+    "dev": [
+      100,
+      145
+    ],
+    "dev_fold_days": 9,
+    "embargo_gap": [
+      145,
+      146
+    ],
+    "holdout": [
+      146,
+      179
+    ],
+    "train": [
+      10,
+      100
+    ],
+    "warmup": [
+      0,
+      10
+    ]
+  },
+  "dsr_trials": "all logged trials across research_v1 and research_v2",
+  "embargo_seconds": 28800,
+  "entry_gate": {
+    "lcb_z": 1.64,
+    "lookback_bars": 2000,
+    "min_effective_samples": 20
+  },
+  "exits_fixed": {
+    "hold_bars": [
+      16
+    ],
+    "stop_mult": [
+      2.0
+    ]
+  },
+  "frozen_at": "2026-09-30T21:40:50.834085+00:00",
+  "gates": {
+    "G10_regimes": "no powered regime (>= 30 effective trades) with expectancy CI upper bound < 0",
+    "G11_event_driven_consistency": "event-driven replay on dev: invariants pass AND net > 0 (screener/simulator agree in sign)",
+    "G1_walkforward_oos": "purged walk-forward OOS mean daily MTM return: 90% stationary-bootstrap CI lower bound > 0",
+    "G2_effective_sample": "candidate effective (non-overlapping) trades on dev >= 30",
+    "G3_deflated_sharpe": "DSR >= 0.95 (daily MTM, N = all v1+v2 logged trials)",
+    "G4_pbo": "PBO <= 0.20 (CSCV over all v2 trials, 10 blocks)",
+    "G5_parameter_stability": "every 1-step grid neighbour: dev Sharpe > 0 and >= 50% of candidate",
+    "G6_negative_controls": "candidate dev Sharpe > 95th pct of 200 exposure-matched block-randomized AND 200 time-shifted signals",
+    "G7_cost_robustness": "break-even cost multiplier >= 2.0 AND correlated execution MC P(net < 0) <= 0.20",
+    "G8_latency": "break-even latency >= 2 bars (30 min)",
+    "G9_market_path_mc": "primary MC: median net > 0 AND P(max drawdown > 3%) <= 0.05; sign of median stable across block configs",
+    "H1_holdout": "(only if a candidate survives G1-G11) sealed holdout once: net > 0, daily-MTM CI lower > 0, eff. trades >= 20, maxDD <= 3%, DSR >= 0.95",
+    "S1_stress_safety": "every stress scenario: hard invariants pass (caps, stop present, reconciliation, no reversal, no entry outside NORMAL), no liquidation, and worst trade loss <= equity x max_stress_loss_fraction x max(1, |scenario move| / stress_joint_move); non-price scenarios: <= 2 x per-trade budget"
+  },
+  "hypotheses": {
+    "funding_crowding_v1": {
+      "causality_check": true,
+      "concerns": [
+        "multiple_testing",
+        "synthetic_artifact"
+      ],
+      "critic_verdict": "test",
+      "eligible": true
+    },
+    "liquidity_shock_reversal_v1": {
+      "causality_check": true,
+      "concerns": [
+        "multiple_testing",
+        "synthetic_artifact"
+      ],
+      "critic_verdict": "test",
+      "eligible": true
+    },
+    "onchain_activity_trend_v1": {
+      "causality_check": true,
+      "concerns": [
+        "multiple_testing",
+        "data_availability",
+        "synthetic_artifact"
+      ],
+      "critic_verdict": "test",
+      "eligible": true
+    },
+    "overextension_reversion_v1": {
+      "causality_check": true,
+      "concerns": [
+        "multiple_testing",
+        "synthetic_artifact"
+      ],
+      "critic_verdict": "test",
+      "eligible": true
+    },
+    "trend_breakout_v1": {
+      "causality_check": true,
+      "concerns": [
+        "multiple_testing",
+        "synthetic_artifact"
+      ],
+      "critic_verdict": "test",
+      "eligible": true
+    },
+    "volatility_breakout_v1": {
+      "causality_check": true,
+      "concerns": [
+        "multiple_testing",
+        "synthetic_artifact"
+      ],
+      "critic_verdict": "test",
+      "eligible": true
+    }
+  },
+  "iteration_rule": "extra rounds only after a logged defect fix or a pre-declared bounded change; total trials <= budget",
+  "manifest_sha256": "6a69c50640fd0273a615044df25108a2e0f5a369b9170feb06f80b20dd7f7eb3",
+  "manifest_version": "research_v2",
+  "min_effective_trades": {
+    "dev": 30,
+    "holdout": 20
+  },
+  "monte_carlo": {
+    "path_days": 60,
+    "portfolio_blocks_days": [
+      1,
+      3,
+      7
+    ],
+    "portfolio_paths": 5000,
+    "primary": {
+      "block_bars": 96,
+      "paths": 5000,
+      "scheme": "stationary"
+    },
+    "sensitivity": [
+      {
+        "block_bars": 16,
+        "paths": 1000,
+        "scheme": "moving"
+      },
+      {
+        "block_bars": 96,
+        "paths": 1000,
+        "scheme": "moving"
+      },
+      {
+        "block_bars": 288,
+        "paths": 1000,
+        "scheme": "moving"
+      },
+      {
+        "block_bars": 16,
+        "paths": 1000,
+        "scheme": "stationary"
+      },
+      {
+        "block_bars": 288,
+        "paths": 1000,
+        "scheme": "stationary"
+      }
+    ],
+    "warm_days": 15
+  },
+  "parameter_ranges": {
+    "funding_crowding_v1": {
+      "thr": [
+        0.0002,
+        0.0003,
+        0.0004
+      ]
+    },
+    "liquidity_shock_reversal_v1": {
+      "k": [
+        1.5,
+        2.0
+      ],
+      "m": [
+        2.0,
+        3.0
+      ]
+    },
+    "onchain_activity_trend_v1": {
+      "w": [
+        24,
+        96
+      ],
+      "z": [
+        1.5,
+        2.5
+      ]
+    },
+    "overextension_reversion_v1": {
+      "n": [
+        32,
+        96
+      ],
+      "z": [
+        1.0,
+        1.5
+      ]
+    },
+    "trend_breakout_v1": {
+      "fast": [
+        8,
+        16
+      ],
+      "slow": [
+        48,
+        96
+      ],
+      "z": [
+        0.5,
+        1.0
+      ]
+    },
+    "volatility_breakout_v1": {
+      "c": [
+        0.6,
+        0.8
+      ],
+      "m": [
+        96
+      ],
+      "n": [
+        16,
+        32
+      ]
+    }
+  },
+  "phi": "fake_phi_rules_v2; real-Phi benchmark, fine-tuning and prompt-seed robustness UNTESTED here",
+  "risk": {
+    "daily_loss_limit": 0.01,
+    "drawdown_limit": 0.03,
+    "gross_cap": 1.0,
+    "leverage": 2.0,
+    "per_trade_risk": 0.0025,
+    "symbol_cap": 0.25
+  },
+  "selection": "walk-forward: at each dev fold pick the train-eligible trial with best daily-MTM Sharpe on purged data before the fold; final candidate = best on [train start, dev end - embargo]",
+  "sharpe": "annualized sqrt(365) from daily mark-to-market portfolio returns after all costs",
+  "status": "SYNTHETIC fixture + FAKE Phi: machinery demonstration; alpha and Phi value UNTESTED",
+  "supersedes": "research_v1 (its holdout is spent and is never treated as fresh evidence)",
+  "train_eligibility": "train Sharpe > 0 AND train net > 0 AND train effective trades >= 30",
+  "trial_budget_total": 48,
+  "trials_round0": [
+    {
+      "hypothesis": "funding_crowding_v1",
+      "params": {
+        "thr": 0.0002
+      },
+      "round": 0,
+      "trial_id": "V2T00"
+    },
+    {
+      "hypothesis": "funding_crowding_v1",
+      "params": {
+        "thr": 0.0003
+      },
+      "round": 0,
+      "trial_id": "V2T01"
+    },
+    {
+      "hypothesis": "funding_crowding_v1",
+      "params": {
+        "thr": 0.0004
+      },
+      "round": 0,
+      "trial_id": "V2T02"
+    },
+    {
+      "hypothesis": "liquidity_shock_reversal_v1",
+      "params": {
+        "k": 1.5,
+        "m": 2.0
+      },
+      "round": 0,
+      "trial_id": "V2T03"
+    },
+    {
+      "hypothesis": "liquidity_shock_reversal_v1",
+      "params": {
+        "k": 1.5,
+        "m": 3.0
+      },
+      "round": 0,
+      "trial_id": "V2T04"
+    },
+    {
+      "hypothesis": "liquidity_shock_reversal_v1",
+      "params": {
+        "k": 2.0,
+        "m": 2.0
+      },
+      "round": 0,
+      "trial_id": "V2T05"
+    },
+    {
+      "hypothesis": "liquidity_shock_reversal_v1",
+      "params": {
+        "k": 2.0,
+        "m": 3.0
+      },
+      "round": 0,
+      "trial_id": "V2T06"
+    },
+    {
+      "hypothesis": "onchain_activity_trend_v1",
+      "params": {
+        "w": 24,
+        "z": 1.5
+      },
+      "round": 0,
+      "trial_id": "V2T07"
+    },
+    {
+      "hypothesis": "onchain_activity_trend_v1",
+      "params": {
+        "w": 24,
+        "z": 2.5
+      },
+      "round": 0,
+      "trial_id": "V2T08"
+    },
+    {
+      "hypothesis": "onchain_activity_trend_v1",
+      "params": {
+        "w": 96,
+        "z": 1.5
+      },
+      "round": 0,
+      "trial_id": "V2T09"
+    },
+    {
+      "hypothesis": "onchain_activity_trend_v1",
+      "params": {
+        "w": 96,
+        "z": 2.5
+      },
+      "round": 0,
+      "trial_id": "V2T10"
+    },
+    {
+      "hypothesis": "overextension_reversion_v1",
+      "params": {
+        "n": 32,
+        "z": 1.0
+      },
+      "round": 0,
+      "trial_id": "V2T11"
+    },
+    {
+      "hypothesis": "overextension_reversion_v1",
+      "params": {
+        "n": 32,
+        "z": 1.5
+      },
+      "round": 0,
+      "trial_id": "V2T12"
+    },
+    {
+      "hypothesis": "overextension_reversion_v1",
+      "params": {
+        "n": 96,
+        "z": 1.0
+      },
+      "round": 0,
+      "trial_id": "V2T13"
+    },
+    {
+      "hypothesis": "overextension_reversion_v1",
+      "params": {
+        "n": 96,
+        "z": 1.5
+      },
+      "round": 0,
+      "trial_id": "V2T14"
+    },
+    {
+      "hypothesis": "trend_breakout_v1",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "z": 0.5
+      },
+      "round": 0,
+      "trial_id": "V2T15"
+    },
+    {
+      "hypothesis": "trend_breakout_v1",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "z": 1.0
+      },
+      "round": 0,
+      "trial_id": "V2T16"
+    },
+    {
+      "hypothesis": "trend_breakout_v1",
+      "params": {
+        "fast": 8,
+        "slow": 96,
+        "z": 0.5
+      },
+      "round": 0,
+      "trial_id": "V2T17"
+    },
+    {
+      "hypothesis": "trend_breakout_v1",
+      "params": {
+        "fast": 8,
+        "slow": 96,
+        "z": 1.0
+      },
+      "round": 0,
+      "trial_id": "V2T18"
+    },
+    {
+      "hypothesis": "trend_breakout_v1",
+      "params": {
+        "fast": 16,
+        "slow": 48,
+        "z": 0.5
+      },
+      "round": 0,
+      "trial_id": "V2T19"
+    },
+    {
+      "hypothesis": "trend_breakout_v1",
+      "params": {
+        "fast": 16,
+        "slow": 48,
+        "z": 1.0
+      },
+      "round": 0,
+      "trial_id": "V2T20"
+    },
+    {
+      "hypothesis": "trend_breakout_v1",
+      "params": {
+        "fast": 16,
+        "slow": 96,
+        "z": 0.5
+      },
+      "round": 0,
+      "trial_id": "V2T21"
+    },
+    {
+      "hypothesis": "trend_breakout_v1",
+      "params": {
+        "fast": 16,
+        "slow": 96,
+        "z": 1.0
+      },
+      "round": 0,
+      "trial_id": "V2T22"
+    },
+    {
+      "hypothesis": "volatility_breakout_v1",
+      "params": {
+        "c": 0.6,
+        "m": 96,
+        "n": 16
+      },
+      "round": 0,
+      "trial_id": "V2T23"
+    },
+    {
+      "hypothesis": "volatility_breakout_v1",
+      "params": {
+        "c": 0.6,
+        "m": 96,
+        "n": 32
+      },
+      "round": 0,
+      "trial_id": "V2T24"
+    },
+    {
+      "hypothesis": "volatility_breakout_v1",
+      "params": {
+        "c": 0.8,
+        "m": 96,
+        "n": 16
+      },
+      "round": 0,
+      "trial_id": "V2T25"
+    },
+    {
+      "hypothesis": "volatility_breakout_v1",
+      "params": {
+        "c": 0.8,
+        "m": 96,
+        "n": 32
+      },
+      "round": 0,
+      "trial_id": "V2T26"
+    }
+  ],
+  "universe": {
+    "survivorship": "fixed survivor universe; a real study needs a point-in-time listing universe",
+    "symbols": [
+      "BTCUSDT-PERP",
+      "ETHUSDT-PERP"
+    ]
+  }
+}
