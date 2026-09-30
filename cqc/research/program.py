@@ -434,13 +434,21 @@ def verdicts() -> dict:
         pbo = dev["pbo"].get("pbo")
         g["E4_pbo"] = (syn("INCONCLUSIVE" if pbo is None else ("PASS" if pbo <= 0.20 else "FAIL")), f"PBO {pbo}")
         e5 = hold["P0"]["max_drawdown_pct"] <= 3 and (hold["P0"]["cvar95_daily"] or 0) >= -0.01 * eq0
-        g["E5_tail_risk"] = (syn("PASS" if e5 else "FAIL"), f"maxDD {hold['P0']['max_drawdown_pct']}%, CVaR95 {hold['P0']['cvar95_daily']}")
+        vacuous = hold["P0"]["trades"] == 0  # a risk gate cannot "pass" with no exposure at all
+        g["E5_tail_risk"] = (syn("INCONCLUSIVE" if vacuous else ("PASS" if e5 else "FAIL")),
+                             f"maxDD {hold['P0']['max_drawdown_pct']}%, CVaR95 {hold['P0']['cvar95_daily']}"
+                             + (" (vacuous: zero holdout trades)" if vacuous else ""))
         pneg = hold["cost_mc"].get("p_total_negative")
         g["E6_cost_robustness"] = (syn("INCONCLUSIVE" if pneg is None else ("PASS" if pneg <= 0.20 else "FAIL")),
                                    f"P(total<0) {pneg}")
     g["E7_phi_incremental_value"] = ("UNTESTED", "fake Phi reproduces the deterministic ranker by construction; real Phi not run")
     g["R1_real_phi_measured"] = ("UNTESTED", "no GPU / weights in this environment; use `python -m cqc bench-phi`")
     g["D1_real_point_in_time_data"] = ("UNTESTED", "no real exchange/on-chain captures; all economics are synthetic")
+    if hold:
+        g["ECONOMIC_OUTCOME_SYNTHETIC"] = ("NO VERIFIED EDGE" if g["E1_holdout_net_positive"][0].startswith("FAIL")
+                                           or not g["E4_pbo"][0].startswith("PASS") else "SEE GATES",
+                                           "selected candidate did not earn a positive, significant holdout return and "
+                                           "the dev search shows high overfitting risk")
     g["INVESTMENT_VERDICT"] = ("UNTESTED", "no real-data, real-model evidence exists; synthetic results are engineering-only")
     return g
 

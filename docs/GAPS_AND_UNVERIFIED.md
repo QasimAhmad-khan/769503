@@ -1,5 +1,11 @@
 # Measured, unverified and still missing
 
+> **Update (validation program, research_v1):** `docs/VALIDATION_REPORT.md` holds the gate table. Safety
+> invariants and leakage checks PASS across 63 runs. On the synthetic fixture the economic outcome is
+> **NO VERIFIED EDGE**: the holdout failed, PBO is 0.91, and the sealed holdout produced zero trades. The
+> investment verdict is UNTESTED (no real data, no real Phi). A 5-minute wall-clock protection soak ran
+> with zero loop errors; the 24 h soak against the real Phi server is still UNTESTED.
+
 State at the ADR-002 correction (2026-10-01). Hardware: a Linux container with 4 vCPUs and 15 GiB RAM,
 **no GPU**, Python 3.11. All trading runs use **labeled synthetic data** and the **labeled
 rule-based fake Phi backend** (`fake_phi_rules_v2`).

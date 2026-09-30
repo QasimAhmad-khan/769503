@@ -1,0 +1,148 @@
+{
+  "wall_seconds": 300.0,
+  "simulated_minutes": 5755,
+  "protection_loop_runs": 5755,
+  "protection_loop_errors": [],
+  "protect_latency_ms_p50_p99_max": [
+    0.443,
+    0.731,
+    3.597
+  ],
+  "samples": [
+    {
+      "elapsed_s": 0.1,
+      "sim_time": "2026-01-15T00:01:00+00:00",
+      "rss_mib": 115.8,
+      "graph": {
+        "nodes": 0,
+        "edges": 0
+      },
+      "events": 4
+    },
+    {
+      "elapsed_s": 30.1,
+      "sim_time": "2026-01-15T09:38:00+00:00",
+      "rss_mib": 118.5,
+      "graph": {
+        "nodes": 158,
+        "edges": 0
+      },
+      "events": 382
+    },
+    {
+      "elapsed_s": 60.1,
+      "sim_time": "2026-01-15T19:10:00+00:00",
+      "rss_mib": 120.7,
+      "graph": {
+        "nodes": 379,
+        "edges": 0
+      },
+      "events": 814
+    },
+    {
+      "elapsed_s": 90.1,
+      "sim_time": "2026-01-16T04:38:00+00:00",
+      "rss_mib": 122.9,
+      "graph": {
+        "nodes": 541,
+        "edges": 0
+      },
+      "events": 1270
+    },
+    {
+      "elapsed_s": 120.1,
+      "sim_time": "2026-01-16T14:21:00+00:00",
+      "rss_mib": 123.5,
+      "graph": {
+        "nodes": 421,
+        "edges": 0
+      },
+      "events": 1543
+    },
+    {
+      "elapsed_s": 150.1,
+      "sim_time": "2026-01-16T23:53:00+00:00",
+      "rss_mib": 125.4,
+      "graph": {
+        "nodes": 431,
+        "edges": 0
+      },
+      "events": 1996
+    },
+    {
+      "elapsed_s": 180.1,
+      "sim_time": "2026-01-17T09:25:00+00:00",
+      "rss_mib": 127.2,
+      "graph": {
+        "nodes": 502,
+        "edges": 0
+      },
+      "events": 2440
+    },
+    {
+      "elapsed_s": 210.1,
+      "sim_time": "2026-01-17T19:04:00+00:00",
+      "rss_mib": 128.4,
+      "graph": {
+        "nodes": 492,
+        "edges": 0
+      },
+      "events": 2800
+    },
+    {
+      "elapsed_s": 240.1,
+      "sim_time": "2026-01-18T04:39:00+00:00",
+      "rss_mib": 129.9,
+      "graph": {
+        "nodes": 442,
+        "edges": 0
+      },
+      "events": 3202
+    },
+    {
+      "elapsed_s": 270.1,
+      "sim_time": "2026-01-18T14:17:00+00:00",
+      "rss_mib": 131.4,
+      "graph": {
+        "nodes": 438,
+        "edges": 0
+      },
+      "events": 3583
+    }
+  ],
+  "phi": {
+    "model_id": "fake_phi_rules_v2",
+    "revision": "fake",
+    "endpoint": "in-process://fake-phi",
+    "prompt_version": "roles_v2",
+    "calls": 1307,
+    "calls_by_role": {
+      "screener": 541,
+      "analyzer": 766,
+      "decision_maker": 0,
+      "risk_analyst": 0
+    },
+    "schema_failures": 0,
+    "timeouts": 0,
+    "oom": 0,
+    "context_rejects": 0,
+    "queue_rejected": 0,
+    "queue_shed": 0,
+    "max_concurrent_inference": 1,
+    "max_queue_depth": 1,
+    "cache_hit_rate": 0.0,
+    "inference_p50_ms": 0.02,
+    "inference_p95_ms": 0.039,
+    "inference_p99_ms": 0.061,
+    "queue_delay_p50_ms": 0.004,
+    "queue_delay_p95_ms": 0.008,
+    "queue_delay_p99_ms": 0.02,
+    "tokens_in_total": 1396550,
+    "tokens_out_total": 317069,
+    "max_input_tokens": 1130,
+    "gpu_vram_peak_mib": null,
+    "gpu_note": "not measurable without the GPU-hosted server"
+  },
+  "cycles": 766,
+  "note": "shortened wall-clock soak with FAKE Phi; the 24 h soak against the real Phi server is UNTESTED"
+}

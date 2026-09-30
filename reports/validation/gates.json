@@ -1,0 +1,54 @@
+{
+  "H1_safety_invariants": [
+    "PASS",
+    "63 runs"
+  ],
+  "L1_leakage_checks": [
+    "PASS",
+    "registered features causal; leaky positive control detected"
+  ],
+  "E2_sample_size": [
+    "INCONCLUSIVE (SYNTHETIC ONLY)",
+    "effective trades 0 vs required 30"
+  ],
+  "E1_holdout_net_positive": [
+    "FAIL (SYNTHETIC ONLY)",
+    "net 0.0 USDT, CI [0.0, 0.0]"
+  ],
+  "E3_deflated_sharpe": [
+    "INCONCLUSIVE (SYNTHETIC ONLY)",
+    "DSR None"
+  ],
+  "E4_pbo": [
+    "FAIL (SYNTHETIC ONLY)",
+    "PBO 0.9143"
+  ],
+  "E5_tail_risk": [
+    "INCONCLUSIVE (SYNTHETIC ONLY)",
+    "maxDD 0.0%, CVaR95 0.0 (vacuous: zero holdout trades)"
+  ],
+  "E6_cost_robustness": [
+    "INCONCLUSIVE (SYNTHETIC ONLY)",
+    "P(total<0) None"
+  ],
+  "E7_phi_incremental_value": [
+    "UNTESTED",
+    "fake Phi reproduces the deterministic ranker by construction; real Phi not run"
+  ],
+  "R1_real_phi_measured": [
+    "UNTESTED",
+    "no GPU / weights in this environment; use `python -m cqc bench-phi`"
+  ],
+  "D1_real_point_in_time_data": [
+    "UNTESTED",
+    "no real exchange/on-chain captures; all economics are synthetic"
+  ],
+  "ECONOMIC_OUTCOME_SYNTHETIC": [
+    "NO VERIFIED EDGE",
+    "selected candidate did not earn a positive, significant holdout return and the dev search shows high overfitting risk"
+  ],
+  "INVESTMENT_VERDICT": [
+    "UNTESTED",
+    "no real-data, real-model evidence exists; synthetic results are engineering-only"
+  ]
+}

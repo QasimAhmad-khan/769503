@@ -1,0 +1,80 @@
+{
+  "candidate": {
+    "manifest_sha256": "1d3653404bd9588eb311f0be0af9aba1af5c90329633a0879d8a2026d8548dca",
+    "quant": {
+      "lcb_z": 2.33,
+      "stop_vol_multiple": "1.5",
+      "trend_entry_z": 0.75
+    },
+    "selector": "deterministic_rank_v1 (P0) and phi (P3) evaluated",
+    "trial_id": "T04"
+  },
+  "P0": {
+    "days": 15,
+    "net_pnl": 0.0,
+    "net_return_pct": 0.0,
+    "mean_daily": 0.0,
+    "sd_daily": 0.0,
+    "sharpe_daily": null,
+    "max_drawdown": 0.0,
+    "max_drawdown_pct": 0.0,
+    "longest_under_water_days": 0,
+    "cvar95_daily": 0.0,
+    "worst_day": 0.0,
+    "trades": 0,
+    "expectancy": null,
+    "win_fraction": null,
+    "profit_factor": null,
+    "worst_trade": null,
+    "effective_trades": 0,
+    "invariants": {
+      "minutes_checked": 20160,
+      "violations": [],
+      "passed": true,
+      "liquidations": 0
+    }
+  },
+  "P3": {
+    "days": 15,
+    "net_pnl": 0.0,
+    "net_return_pct": 0.0,
+    "mean_daily": 0.0,
+    "sd_daily": 0.0,
+    "sharpe_daily": null,
+    "max_drawdown": 0.0,
+    "max_drawdown_pct": 0.0,
+    "longest_under_water_days": 0,
+    "cvar95_daily": 0.0,
+    "worst_day": 0.0,
+    "invariants": {
+      "minutes_checked": 20160,
+      "violations": [],
+      "passed": true,
+      "liquidations": 0
+    },
+    "decision_isolation": null
+  },
+  "ci90_mean_daily_P0": [
+    0.0,
+    0.0
+  ],
+  "dsr": {
+    "dsr": null,
+    "reason": "insufficient observations or zero variance",
+    "T": 15
+  },
+  "cost_mc": {
+    "reps": 0,
+    "reason": "no trades"
+  },
+  "paired_P3_vs_P0": {
+    "days": 15,
+    "mean_daily_diff": 0.0,
+    "total_diff": 0.0,
+    "ci90_mean_daily_diff": [
+      0.0,
+      0.0
+    ],
+    "reading": "inconclusive"
+  }
+}

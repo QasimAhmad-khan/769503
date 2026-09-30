@@ -103,4 +103,39 @@ def render() -> str:
               f"{soak['protection_loop_runs']}, errors {soak['protection_loop_errors']}, protect latency p50/p99/max "
               f"{soak['protect_latency_ms_p50_p99_max']} ms; last sample {soak['samples'][-1] if soak['samples'] else None}.",
               f"- {soak['note']}", ""]
+    L += ["## Diagnoses and rule changes (from the trial log)", ""]
+    for e in log.entries():
+        if e.get("kind") in ("diagnosis", "report_rule_correction"):
+            L.append(f"- [{e['kind']}] {e.get('issue', e.get('change'))} → {e.get('finding', e.get('direction'))}"
+                     + (f"; action: {e['action']}" if e.get("action") else ""))
+    L += ["", "## Why the economic gates failed or are inconclusive", "",
+          "1. **Selection is not reliable.** PBO is high and the deflated Sharpe of the selected trial is low: the "
+          "best dev trial is mostly the luckiest of 12, and its advantage does not persist across time blocks.",
+          "2. **The selected rule trades rarely.** The strict lower-bound rule (lcb_z 2.33) plus a 2000-bar forecast "
+          "window made the candidate abstain for the whole sealed holdout. Zero holdout trades means no economic "
+          "evidence either way; E2/E3/E5/E6 are inconclusive and E1 fails.",
+          "3. **Phi value cannot be measured here.** The fake Phi decision maker is the deterministic ranker by "
+          "construction (identical PnL for P0–P4, 100% agreement on offered sets).",
+          "4. **Latency sensitivity.** One or more bars of extra latency with the 120 s plan TTL produces zero fills "
+          "(fail-closed), which must be addressed as an execution-policy decision before live-like testing.", "",
+          "**Outcome: NO VERIFIED EDGE on the synthetic fixture; investment verdict UNTESTED.** The gates are not "
+          "weakened and the holdout is not re-used.", "",
+          "## Assumptions (model and data)", "",
+          "- Synthetic regime-switching GBM market (seed 2026), 1-minute bars, bar availability = close + 1 s; not market data.",
+          "- Fills: marketable limit from the first full bar after placement, capped at a fraction of bar volume; "
+          "stops fill at the worse of stop/open with 10 bps stress; no queue-position model; maker fees unused.",
+          "- Funding: estimate known at bar end, settled 8-hourly on the position; mark = close ± small noise; "
+          "illustrative maintenance-margin tiers; isolated 2x.",
+          "- Execution perturbations and cost Monte Carlo priors are declared, not fitted (listed above).",
+          "- Market-path Monte Carlo re-samples whole days of the SAME dev pool; it measures fragility, not future returns.",
+          "- Token counts are byte-based estimates for the fake backend; real counts come from the server's tokenizer "
+          "(`usage`) in `bench-phi`.",
+          "- Passive benchmark: static 50/50 long matched to the candidate's average gross exposure (approximation).", "",
+          "## Next steps (not weaker gates, not another holdout pass)", "",
+          "- Capture real point-in-time exchange data (trades, books, mark/index, funding with capture times) and "
+          "admissible on-chain data; freeze `research_v2` with a new sealed holdout.",
+          "- Measure the real pinned Phi model (`bench-phi`), then run P0–P4 with real Phi on the same candidate sets.",
+          "- Pre-register the execution-policy question (TTL vs latency) as its own hypothesis on dev data.",
+          "- Consider hypotheses with a larger effective sample (more instruments or shorter horizons) so gates are powered.",
+          "- Follow `docs/PROSPECTIVE_PAPER_PLAN.md` for the prospective paper period; live orders stay disabled.", ""]
     return "\n".join(L) + "\n"

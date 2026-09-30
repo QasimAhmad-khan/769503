@@ -91,3 +91,28 @@ python -m cqc soak --days 14 # reports/soak_report.json
 python -m cqc evaluate       # reports/evaluation_report.md
 python -m cqc readiness      # exit 1, 16 blockers (expected)
 ```
+
+---
+
+# Work log: validation program (research_v1)
+
+- Baseline at `5cc56a1` reproduced: 64 tests pass, 24/24 fault scenarios pass, demo and evaluation
+  unchanged, readiness exits 1 (`reports/validation/baseline_5cc56a1/`).
+- Portability: `resource` is now imported lazily, with a Windows `PeakWorkingSetSize` fallback and a
+  test. Windows itself has not been run.
+- Added:
+  - `cqc/research/` (manifest, trial log, seal, splits, metrics, regimes, Monte Carlo, invariants,
+    leakage, phi_bench, soak, report)
+  - venue execution scenarios, negative controls, delisting, bar-ingestion hygiene and the ledger
+    integrity check
+  - four fault scenarios
+- Test suite: 82 passed.
+- The manifest was frozen at commit `694d2a9`. The 12 pre-registered trials ran once. Selection used
+  the pre-registered rule and chose T04. There were 49 robustness replays, and the sealed holdout was
+  evaluated exactly once (a second attempt is refused).
+- Diagnoses:
+  - zero-trade dev folds are abstention, not a bug
+  - latency of one bar or more combined with the 120 s TTL gives zero fills
+- Report-rule correction after the holdout: a zero-trade tail gate is INCONCLUSIVE (stricter only).
+  This is disclosed in the trial log.
+- Outcome: NO VERIFIED EDGE (synthetic). Investment verdict UNTESTED.
