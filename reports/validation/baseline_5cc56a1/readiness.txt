@@ -1,0 +1,23 @@
+{
+  "live_trading_enabled": false,
+  "ready_for_live": false,
+  "blockers": [
+    "promotion.research_manifest_id unresolved",
+    "promotion.minimum_effective_sample_count unresolved",
+    "promotion.net_ev_hurdle_quote unresolved",
+    "promotion.paired_improvement_hurdle unresolved",
+    "promotion.required_confidence_method unresolved",
+    "promotion.prospective_evaluation_complete is false",
+    "resources.host_ram_budget_gib unmeasured",
+    "resources.gpu_vram_budget_gib unmeasured",
+    "resources.disk_quota_gib unmeasured",
+    "fake Phi backend configured (phi.backend)",
+    "phi.model_revision unresolved (RESOLVE_AND_PIN)",
+    "phi.runtime unresolved (SELECT_AFTER_GPU_DISCOVERY)",
+    "phi.quantization unresolved (BENCHMARK_SUPPORTED_4BIT_AGAINST_REFERENCE)",
+    "Phi decision-maker value vs deterministic_rank_v1 not established on real point-in-time data",
+    "venue margin rules not configured for a real venue",
+    "no real venue selected"
+  ]
+}
+readiness exit=1

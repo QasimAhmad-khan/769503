@@ -99,6 +99,26 @@ class BarSeries:
         self.bars.append(bar)
         self._avail.append(bar.available_at)
 
+    def ingest(self, bar: Bar, max_log_jump: float = 0.2) -> str:
+        """Hygienic ingestion for external feeds: drops exact duplicates, rejects out-of-order bars,
+        conflicting re-deliveries and bad ticks (non-positive/inconsistent prices, crossed quotes,
+        implausible one-bar jumps). Returns the disposition; rejected bars are never appended."""
+        if self.bars:
+            last = self.bars[-1]
+            if bar.start == last.start:
+                same = (bar.open, bar.high, bar.low, bar.close) == (last.open, last.high, last.low, last.close)
+                return "duplicate" if same else "conflicting_redelivery"
+            if bar.start < last.end:
+                return "out_of_order"
+        prices = (bar.open, bar.high, bar.low, bar.close, bar.bid, bar.ask, bar.mark)
+        if any(not math.isfinite(p) or p <= 0 for p in prices) or bar.high < bar.low \
+                or not bar.low <= bar.close <= bar.high or bar.bid > bar.ask:
+            return "bad_tick"
+        if self.bars and abs(math.log(bar.close / self.bars[-1].close)) > max_log_jump:
+            return "bad_tick"
+        self.append(bar)
+        return "accepted"
+
     def completed(self, cutoff: datetime, limit: int | None = None) -> list:
         """Bars whose publication time is at or before the cutoff. Never returns a future bar."""
         idx = bisect.bisect_right(self._avail, cutoff)

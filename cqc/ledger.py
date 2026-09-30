@@ -53,12 +53,22 @@ class StaleFencingToken(RuntimeError):
     pass
 
 
+class LedgerCorrupted(RuntimeError):
+    """The durable ledger failed its integrity check: the worker must not start (fail closed)."""
+
+
 class Ledger:
     def __init__(self, path: str = ":memory:"):
         self.path = path
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.row_factory = sqlite3.Row
-        self.db.executescript(SCHEMA)
+        try:
+            status = self.db.execute("PRAGMA quick_check").fetchone()[0]
+            if status != "ok":
+                raise LedgerCorrupted(f"integrity check failed: {status}")
+            self.db.executescript(SCHEMA)
+        except sqlite3.DatabaseError as exc:
+            raise LedgerCorrupted(str(exc)) from exc
         self._lock = __import__("threading").RLock()
         self._migrate()
         self.fail_writes = 0  # fault injection: number of upcoming audit writes that fail

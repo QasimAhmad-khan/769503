@@ -1,0 +1,25 @@
+{
+  "commit": "5cc56a115b8751e4977c24f94698cac3c9bfc9ed",
+  "dirty": true,
+  "branch": "claude/nice-bell-2pd7ys",
+  "python": "3.11.15",
+  "platform": "Linux-6.18.44-fc-v50-x86_64-with-glibc2.39",
+  "deps": {
+    "numpy": "2.4.6",
+    "jsonschema": "4.26.0",
+    "pytest": "9.1.1"
+  },
+  "config_sha256": "a5e58c35ce8f64c9c9bd6e3e3c53ccc1cefd433d22b7500145f3440255b7abf4",
+  "schema_sha256": "bf755b086c85930dd79a21528af80c4c35308e6b5bff59d43666d7397576d613",
+  "stage": "baseline verification at the stated starting commit",
+  "note": "working tree contained only new, not-yet-imported files under cqc/research and tests/test_research_protocol.py (added after pytest collection); baseline commands exercise committed code only",
+  "commands": {
+    "python -m pytest -q": "exit 0, 64 passed",
+    "python -m cqc faults": "exit 0, 24/24 passed",
+    "python -m cqc demo": "exit 0",
+    "python -m cqc evaluate": "exit 0 (P0 net -82.4234 USDT; P1-P4 identical)",
+    "python -m cqc readiness": "exit 1, 16 blockers (expected)"
+  },
+  "windows_portability": "cqc/__main__.py imports Unix-only `resource` at module import -> `python -m cqc --help` raises ModuleNotFoundError on Windows (confirmed by code inspection; no Windows host available)",
+  "record_sha256": "41d0fb0ab022c3481d96fb8f17957e52d019dbba3b53bbcf0fc4c6388681fe7a"
+}

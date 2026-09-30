@@ -6,6 +6,9 @@
   replay      replay a window and print the run summary (--days, --start-day, --db)
   soak        long replay measuring RSS / DB growth / risk latency -> reports/soak_report.json
   readiness   list live-readiness / promotion blockers (always non-empty in paper mode)
+  validate    research validation program: freeze | dev | robustness | holdout | report | all
+              (frozen manifest, hash-chained trial log, one-shot sealed holdout) -> reports/validation
+  bench-phi   real Phi benchmark on a GPU host: --endpoint name=url (repeatable; e.g. reference and 4-bit)
   check-phi   probe the ONE configured local Phi server: one call per role (screener, analyzer,
               decision_maker, risk_analyst) through the same backend, reporting schema validity and latency
 """
@@ -15,7 +18,6 @@ import argparse
 import json
 import os
 import platform
-import resource
 import sys
 import time
 from datetime import timedelta
@@ -23,7 +25,33 @@ from pathlib import Path
 
 
 def _rss_mib():
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    """Peak RSS in MiB. POSIX via `resource` (Linux KiB, macOS bytes); Windows via PeakWorkingSetSize;
+    None when unavailable. `resource` is imported lazily so the CLI imports on Windows."""
+    try:
+        import resource
+        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        return round(peak / (1024 * 1024) if sys.platform == "darwin" else peak / 1024, 1)
+    except ImportError:
+        pass
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            class PMC(ctypes.Structure):
+                _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                            ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t),
+                            ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                            ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                            ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
+            pmc = PMC()
+            pmc.cb = ctypes.sizeof(PMC)
+            handle = ctypes.windll.kernel32.GetCurrentProcess()
+            if ctypes.windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(pmc), pmc.cb):
+                return round(pmc.PeakWorkingSetSize / (1024 * 1024), 1)
+        except (OSError, AttributeError):
+            return None
+    return None
 
 
 def hardware():
@@ -40,12 +68,18 @@ def hardware():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="cqc", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["demo", "faults", "evaluate", "replay", "soak", "readiness", "check-phi"])
+    ap.add_argument("command", choices=["demo", "faults", "evaluate", "replay", "soak", "readiness", "check-phi",
+                                        "validate", "bench-phi"])
     ap.add_argument("--out", default="reports")
     ap.add_argument("--days", type=float, default=3)
     ap.add_argument("--start-day", type=int, default=14)
     ap.add_argument("--db", default=":memory:")
     ap.add_argument("--config", default=None)
+    ap.add_argument("--phase", default="all", choices=["freeze", "dev", "robustness", "holdout", "report", "all"])
+    ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--endpoint", action="append", default=[], help="name=url of an OpenAI-compatible Phi server")
+    ap.add_argument("--ledger", default=None, help="ledger with recorded decisions to build frozen candidate sets")
+    ap.add_argument("--server-pid", type=int, default=None)
     args = ap.parse_args(argv)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -94,17 +128,39 @@ def main(argv=None):
         def probe(runtime, t):
             if t.minute == 0 and t.hour % 6 == 0:
                 size = Path(db).stat().st_size if db != ":memory:" else None
-                samples.append({"sim_time": t.isoformat(), "rss_max_mib": round(_rss_mib(), 1), "db_bytes": size,
+                samples.append({"sim_time": t.isoformat(), "rss_max_mib": _rss_mib(), "db_bytes": size,
                                 "graph": runtime.graph.counts(), "phi_queue_depth": runtime.phi.queue.depth() if runtime.phi else 0})
         rt.run(start, start + timedelta(days=days), on_minute=probe)
         summary = {**rt.summary(), "wall_seconds": round(time.perf_counter() - t0, 1), "simulated_days": days,
-                   "hardware": hardware(), "rss_max_mib": round(_rss_mib(), 1), "samples": samples,
+                   "hardware": hardware(), "rss_max_mib": _rss_mib(), "samples": samples,
                    "note": "Simulated-time soak on SYNTHETIC data with FAKE models; the spec's 24h engineering soak "
                            "must run in wall-clock time against the real local Phi server."}
         if args.command == "soak":
             (out / "soak_report.json").write_text(json.dumps(summary, indent=2, default=str))
         print(json.dumps(summary if args.command == "replay" else {k: v for k, v in summary.items() if k != "samples"},
                          indent=2, default=str))
+        return 0
+
+    if args.command == "validate":
+        from .research import program
+        res = program.main(args.phase, args.workers)
+        if args.phase in ("report", "all"):
+            gates = res["report"] if args.phase == "all" else res
+            print(json.dumps(gates, indent=2))
+        else:
+            print(json.dumps({"phase": args.phase, "done": True}, indent=2))
+        return 0
+
+    if args.command == "bench-phi":
+        from .config import load_config
+        from .ledger import Ledger
+        from .research import phi_bench
+        cfg = load_config(args.config)
+        endpoints = dict(e.split("=", 1) for e in args.endpoint) or {"configured": cfg["phi"]["endpoint"]}
+        sets = phi_bench.plan_sets_from_ledger(Ledger(args.ledger)) if args.ledger else []
+        rep = phi_bench.run(cfg, endpoints, sets, server_pid=args.server_pid)
+        (out / "phi_bench.json").write_text(json.dumps(rep, indent=2, default=str))
+        print(json.dumps(rep, indent=2, default=str))
         return 0
 
     if args.command == "readiness":

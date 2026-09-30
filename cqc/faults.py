@@ -349,6 +349,71 @@ def four_roles_one_backend():
                    all(by_role[r] > 0 for r in by_role) and same and rt.phi.queue.max_active_seen == 1)
 
 
+def feed_loss_blocks_entries():
+    """Stop delivering bars for both symbols before the entry bar: stale quotes must block new risk."""
+    rt = make_runtime()
+    t, _ = first_entry_time()
+    decision_bar = t - timedelta(seconds=2)
+    rt.run(decision_bar - timedelta(minutes=45), decision_bar - timedelta(minutes=10))
+    frozen = {s: rt.series[s] for s in rt.series}
+    from .market import BarSeries
+    cut = decision_bar - timedelta(minutes=10)
+    rt.series = {s: BarSeries(s, [b for b in frozen[s].bars if b.end <= cut],
+                              [b.available_at for b in frozen[s].bars if b.end <= cut]) for s in frozen}
+    rt.run(decision_bar - timedelta(minutes=10), decision_bar + timedelta(minutes=5))
+    return _result("feed_loss", "market feed stops 10 minutes before the entry bar",
+                   "stale_feed lock (NO_NEW_RISK); no entry", f"entries={len(entries(rt))} locks={sorted(rt.risk.locks)}",
+                   len(entries(rt)) == 0 and "stale_feed" in rt.risk.locks)
+
+
+def ledger_corruption_fails_closed():
+    import os
+    import tempfile
+    from .ledger import LedgerCorrupted
+    fd, path = tempfile.mkstemp(suffix=".sqlite")
+    os.write(fd, b"this is not a sqlite database" * 100)
+    os.close(fd)
+    try:
+        Ledger(path)
+        refused = False
+    except LedgerCorrupted:
+        refused = True
+    finally:
+        os.unlink(path)
+    return _result("ledger_corruption", "ledger file overwritten with garbage", "worker refuses to start (LedgerCorrupted)",
+                   f"refused={refused}", refused)
+
+
+def venue_disconnect_around_entry():
+    rt = make_runtime()
+    decision_bar, sym = authorize_without_dispatch(rt)
+    rt.venue.down = True
+    rt.dispatch(decision_bar + timedelta(seconds=3))
+    unknown = [i for i in rt.ledger.intents(purpose="entry") if i["status"] == "unknown"]
+    rt.venue.down = False
+    rt.protect(decision_bar + timedelta(minutes=1))
+    after = rt.ledger.intents(purpose="entry")
+    sent = [o for o in rt.venue.orders.values() if o.client_order_id.startswith("cqc")]
+    return _result("venue_disconnect", "venue unreachable at dispatch, restored a minute later",
+                   "entry marked unknown (reservation kept), reconciled without duplicate orders",
+                   f"unknown_during_outage={len(unknown)} statuses_after={[i['status'] for i in after]} venue_orders={len(sent)}",
+                   len(unknown) == 1 and len(sent) <= 1 and all(i["status"] != "unknown" for i in after))
+
+
+def delisting_closes_and_blocks():
+    rt = make_runtime()
+    decision_bar = run_to_entry(rt, 5)
+    sym = next(s for s, p in rt.executor.book.items() if p.contracts != 0)
+    rt.delist(sym, decision_bar + timedelta(minutes=10))
+    rt.run(decision_bar + timedelta(minutes=5), decision_bar + timedelta(hours=2))
+    closes = [e["payload"] for e in rt.ledger.events("protective_action") if e["payload"]["reason"] == "instrument_delisted"]
+    later = [c for c in rt.cycle_log if c["symbol"] == sym and "INSTRUMENT_DELISTED" in c["reasons"]]
+    return _result("delisting", "instrument delisted while a position is open",
+                   "position closed by protection; no new entries for the symbol",
+                   f"flat={rt.executor.book[sym].contracts == 0} delist_closes={len(closes)} blocked_cycles={len(later)}",
+                   rt.executor.book[sym].contracts == 0 and closes and later)
+
+
 ALL = [baseline, lambda: decision_fault("timeout"), lambda: decision_fault("oom"), lambda: decision_fault("malformed"),
        lambda: decision_fault("invent_candidate"), lambda: decision_fault("schema_violation"),
        lambda: decision_fault("abstain"),
@@ -356,7 +421,8 @@ ALL = [baseline, lambda: decision_fault("timeout"), lambda: decision_fault("oom"
        lambda: phi_fault("schema_violation"), lambda: phi_fault("injected"), phi_oom_keeps_protection, audit_failure,
        ack_loss_and_restart, duplicate_fills, missing_required_evidence, operator_halt, unsupported_route,
        admission_account_changed, admission_price_collar, slow_phi_does_not_delay_protection, legacy_jev_ledger,
-       four_roles_one_backend]
+       four_roles_one_backend, feed_loss_blocks_entries, ledger_corruption_fails_closed, venue_disconnect_around_entry,
+       delisting_closes_and_blocks]
 
 
 def run_all() -> list[dict]:

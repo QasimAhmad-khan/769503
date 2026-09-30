@@ -71,6 +71,28 @@ class SimulatedVenue:
         self.reject_next = 0
         self.down = False
         self.duplicate_fill_delivery = False
+        self.scenario: dict = {}
+        self._outages: list | None = None
+        self._rng = None
+
+    def apply_scenario(self, scenario: dict):
+        """Seeded execution/venue perturbations (research stress tests; never used in paper defaults)."""
+        import numpy as _np
+        self.scenario = dict(scenario)
+        self._rng = _np.random.default_rng(int(scenario.get("seed", 0)))
+        self.taker = self.taker * D(repr(scenario.get("fee_mult", 1.0)))
+        self.max_fill_frac *= float(scenario.get("liquidity_mult", 1.0))
+        self._outages = None
+
+    def _scenario_outages(self, first_start):
+        sc = self.scenario
+        if not sc.get("outages"):
+            return []
+        from datetime import timedelta as _td
+        span = int(sc.get("outage_span_days", 42)) * 1440
+        starts = sorted(int(x) for x in self._rng.integers(0, span, int(sc.get("outage_count", 0))))
+        return [(first_start + _td(minutes=m), first_start + _td(minutes=m + int(sc.get("outage_minutes", 30))))
+                for m in starts]
 
     # ------------------------------------------------------------------ account truth
     @property
@@ -103,6 +125,8 @@ class SimulatedVenue:
         if self.reject_next:
             self.reject_next -= 1
             raise VenueReject("injected reject")
+        if self.scenario.get("reject_prob") and self._rng.random() < float(self.scenario["reject_prob"]):
+            raise VenueReject("scenario reject")
         if qty <= 0 or qty % inst.qty_step != 0 or qty < inst.min_contracts or qty > inst.max_contracts:
             raise VenueReject("invalid quantity precision or size")
         for price in (limit_price, stop_price):
@@ -153,6 +177,11 @@ class SimulatedVenue:
                 return
         inst = self.instruments[order.symbol]
         price = round_price(price, inst.price_tick)
+        extra = D(repr(self.scenario.get("extra_slippage_bps", 0))) / D(10000)
+        if order.order_type == "stop_market":
+            extra += D(repr(self.scenario.get("stop_gap_extra_bps", 0))) / D(10000)
+        if extra:
+            price = round_price(price * (1 + extra) if order.side == "buy" else price * (1 - extra), inst.price_tick)
         fee_quote = fee_of(qty, inst.multiplier, price, self.taker)
         pos.apply_fill(order.side, qty, price, fee_quote, reduce_only=order.reduce_only, leverage=self.leverage)
         order.filled += qty
@@ -172,6 +201,10 @@ class SimulatedVenue:
         """Advance one completed 1-minute bar for `bar.symbol`: match, settle funding, liquidate."""
         previous = self.last_bar.get(bar.symbol)
         self.now = bar.end
+        if self.scenario.get("outages"):
+            if self._outages is None:
+                self._outages = self._scenario_outages(bar.start)
+            self.down = any(a <= bar.end < b for a, b in self._outages)
         inst = self.instruments[bar.symbol]
         half = D(repr((bar.ask - bar.bid) / 2))
         o, hi, lo = D(repr(bar.open)), D(repr(bar.high)), D(repr(bar.low))
@@ -181,6 +214,9 @@ class SimulatedVenue:
                 continue  # placed after this bar closed
             if order.created is not None and order.created > bar.start:
                 continue  # executes from the next bar that starts after placement
+            lat = int(self.scenario.get("latency_bars", 0))
+            if lat and order.created is not None and bar.start < order.created + (bar.end - bar.start) * (lat + 1):
+                continue  # scenario latency: extra bars before the order reaches the book
             remaining = order.qty - order.filled
             if order.order_type == "stop_market":
                 triggered = (order.side == "sell" and lo <= order.stop_price) or (order.side == "buy" and hi >= order.stop_price)
@@ -211,9 +247,10 @@ class SimulatedVenue:
             for t in funding_times(previous.end, bar.end, self.funding_hours):
                 pos = self.positions[bar.symbol]
                 if pos.contracts:
-                    pay = pos.settle_funding(D(repr(bar.mark)), D(repr(previous.funding_rate_est)))
+                    rate = D(repr(previous.funding_rate_est)) * D(repr(self.scenario.get("funding_mult", 1.0)))
+                    pay = pos.settle_funding(D(repr(bar.mark)), rate)
                     self.funding_log.append({"symbol": bar.symbol, "ts": t, "payment": pay,
-                                             "rate": D(repr(previous.funding_rate_est)), "contracts": pos.contracts})
+                                             "rate": rate, "contracts": pos.contracts})
         self._liquidate(bar)
 
     def _liquidate(self, bar):

@@ -100,7 +100,33 @@ class PaperRuntime:
         self._auths: dict = {}
         self._review_pending: str | None = None
         self._phi_calls_this_cycle = 0
+        self.delisted: dict = {}
         self.started = False
+
+    def delist(self, symbol: str, at: datetime):
+        """Instrument delisting: no new entries from `at`; open positions are closed by protection."""
+        self.delisted[symbol] = at
+
+    def _is_delisted(self, sym, now):
+        return sym in self.delisted and now >= self.delisted[sym]
+
+    @staticmethod
+    def _negative_control(feats, mode, sym, bars):
+        """Research negative controls (never in paper defaults): market-independent random signal, or a
+        signal delayed by N decision bars. Both must remove any genuine signal."""
+        out = dict(feats)
+        if mode == "random_signal":
+            h = sum(map(ord, sym))
+            ts = np.array([int(b.start.timestamp()) // 900 for b in bars], dtype=np.int64)
+            out["trend_dir"] = (((ts * 2654435761 + h * 97) % 1000003) % 3 - 1).astype(float)
+            out["funding_dir"] = np.zeros(len(bars))
+        elif mode.startswith("delay_signal:"):
+            n = int(mode.split(":")[1])
+            for k in ("trend_dir", "funding_dir"):
+                out[k] = np.concatenate([np.zeros(n), np.asarray(feats[k])[:-n]])
+        else:
+            raise ValueError(f"unknown negative control {mode}")
+        return out
 
     # ------------------------------------------------------------------ identity / recording
     @property
@@ -206,6 +232,10 @@ class PaperRuntime:
             self._expire_advisory_lock(now)
             acct = self.executor.account_view(now, self.quote_ts())
             actions = self.risk.watchdog(acct, now)
+            for sym in self.delisted:
+                if self._is_delisted(sym, now) and self.executor.book[sym].contracts != 0:
+                    actions.append({"type": "close", "symbol": sym, "qty": abs(self.executor.book[sym].contracts),
+                                    "reason": "instrument_delisted"})
             for a in actions:
                 if a["type"] == "ensure_stop":
                     self.executor.ensure_stop(a["symbol"], self._stop_price(a["symbol"]), now)
@@ -345,6 +375,8 @@ class PaperRuntime:
     def _admission(self, intent: dict, now: datetime):
         if intent["purpose"] == "protective":
             return True, ["PROTECTIVE"]
+        if self._is_delisted(intent["symbol"], now):
+            return False, ["INSTRUMENT_DELISTED"]
         plan = self._plans.get(intent["plan_sha256"])
         auth = self._auths.get(intent["authorization_id"])
         if plan is None or auth is None:  # e.g. after restart: recover from the durable ledger
@@ -395,6 +427,11 @@ class PaperRuntime:
             return
         closes = np.array([b.close for b in bars])
         feats = quant.features(closes, np.array([b.funding_rate_est for b in bars]), dict(q))
+        if q.get("negative_control"):
+            feats = self._negative_control(feats, q["negative_control"], sym, bars)
+        if self._is_delisted(sym, now):
+            result["reasons"].append("INSTRUMENT_DELISTED")
+            return
         if bars[-1].spread_bps > float(q["max_spread_bps"]):
             result["reasons"].append("SPREAD_TOO_WIDE")
             return
