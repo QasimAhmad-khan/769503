@@ -34,7 +34,7 @@ def check_entry(*, cfg, route: str, strategy: str, plan: dict, decision: dict | 
         return True, "NOT_RISK_INCREASING"
     if route not in ALLOWED_ENTRY_ROUTES:
         return False, f"UNSUPPORTED_ENTRY_ROUTE:{route}"
-    if strategy not in SUPPORTED_STRATEGIES:
+    if strategy not in SUPPORTED_STRATEGIES and strategy not in cfg["research"].get("hypotheses", {}):
         return False, f"UNSUPPORTED_STRATEGY:{strategy}"
     if not audit_ok:
         return False, "DURABLE_AUDIT_UNAVAILABLE"

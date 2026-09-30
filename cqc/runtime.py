@@ -101,7 +101,18 @@ class PaperRuntime:
         self._review_pending: str | None = None
         self._phi_calls_this_cycle = 0
         self.delisted: dict = {}
+        # research hypotheses (registered in cqc.research.signals) replace the built-in pair when configured
+        self.research_hyps = dict(cfg["research"].get("hypotheses", {}) or {})
+        self.hypotheses = {h: HYPOTHESES.get(h, self._default_vars(h)) for h in self.research_hyps} or dict(HYPOTHESES)
         self.started = False
+
+    @staticmethod
+    def _default_vars(h):
+        from .research.signals import REGISTRY
+        base = [("spread_bps", True, 120), ("estimated_funding_rate", True, 120), ("realized_vol_15m", True, 120)]
+        if REGISTRY[h]["family"] == "onchain":
+            base.append(("chain_large_transfer_count_1h", True, 7200))
+        return base
 
     def delist(self, symbol: str, at: datetime):
         """Instrument delisting: no new entries from `at`; open positions are closed by protection."""
@@ -120,9 +131,11 @@ class PaperRuntime:
             ts = np.array([int(b.start.timestamp()) // 900 for b in bars], dtype=np.int64)
             out["trend_dir"] = (((ts * 2654435761 + h * 97) % 1000003) % 3 - 1).astype(float)
             out["funding_dir"] = np.zeros(len(bars))
+            for k in [k for k in feats if k.startswith("dir:")]:
+                out[k] = out["trend_dir"]
         elif mode.startswith("delay_signal:"):
             n = int(mode.split(":")[1])
-            for k in ("trend_dir", "funding_dir"):
+            for k in [k for k in feats if k in ("trend_dir", "funding_dir") or k.startswith("dir:")]:
                 out[k] = np.concatenate([np.zeros(n), np.asarray(feats[k])[:-n]])
         else:
             raise ValueError(f"unknown negative control {mode}")
@@ -427,6 +440,12 @@ class PaperRuntime:
             return
         closes = np.array([b.close for b in bars])
         feats = quant.features(closes, np.array([b.funding_rate_est for b in bars]), dict(q))
+        if self.research_hyps:
+            from .research import signals as rsig
+            from .research.vbt import build_ctx
+            ctx = build_ctx(bars)
+            for h, hp in self.research_hyps.items():
+                feats[f"dir:{h}"] = rsig.signals(h, ctx, hp)
         if q.get("negative_control"):
             feats = self._negative_control(feats, q["negative_control"], sym, bars)
         if self._is_delisted(sym, now):
@@ -442,7 +461,10 @@ class PaperRuntime:
         if open_entry:
             result["reasons"].append("ENTRY_ALREADY_PENDING")
             return
-        signals = {"trend_breakout_v1": int(feats["trend_dir"][-1]), "funding_crowding_v1": int(feats["funding_dir"][-1])}
+        if self.research_hyps:
+            signals = {h: int(feats[f"dir:{h}"][-1]) for h in self.research_hyps}
+        else:
+            signals = {"trend_breakout_v1": int(feats["trend_dir"][-1]), "funding_crowding_v1": int(feats["funding_dir"][-1])}
         snapshot_prelim = stable_id("snap0", sym, iso(now))
 
         if position != 0:
@@ -550,7 +572,7 @@ class PaperRuntime:
     def _variables(self, hypothesis):
         out = []
         replay = self.mode == "replay"
-        for var, required, max_age in HYPOTHESES[hypothesis]:
+        for var, required, max_age in self.hypotheses[hypothesis]:
             cls = self.connectors.source_class(var)
             if cls is None:  # no connector registered for this variable (e.g. on-chain ablation)
                 if required:
@@ -564,9 +586,9 @@ class PaperRuntime:
         return out
 
     def _evidence_dialogue(self, sym, inst, signals, snapshot_prelim, now, corr, result):
-        registry = {h: self._variables(h) for h in HYPOTHESES}
+        registry = {h: self._variables(h) for h in self.hypotheses}
         if "evidence" not in self.phi_features:
-            hyp = next((h for h in HYPOTHESES if signals[h] != 0), None)
+            hyp = next((h for h in self.hypotheses if signals[h] != 0), None)
             if hyp is None:
                 result["reasons"].append("NO_REGISTERED_SIGNAL")
                 return None, None
@@ -577,14 +599,14 @@ class PaperRuntime:
                    "hypotheses": [{"hypothesis_id": h, "signal_direction": signals[h],
                                    "variables": [{k: v[k] for k in ("variable", "source_class", "required",
                                                                     "max_age_seconds")} for v in registry[h]
-                                                 if not v["excluded"]]} for h in HYPOTHESES]}
+                                                 if not v["excluded"]]} for h in self.hypotheses]}
         out = self._phi("analyzer", payload, now, corr)
         self.ledger.append(out["kind"], out, now, corr)
         if out["kind"] != "evidence_request":
             result["reasons"] += out["reason_codes"]
             return None, None
         hyp = out["hypothesis_id"]
-        if hyp not in HYPOTHESES or signals[hyp] == 0:
+        if hyp not in self.hypotheses or signals[hyp] == 0:
             result["reasons"].append("EVIDENCE_REQUEST_HYPOTHESIS_NOT_PERMITTED")
             return None, None
         reg = {v["variable"]: v for v in registry[hyp]}
@@ -696,7 +718,7 @@ class PaperRuntime:
         """No-Phi evidence path (baseline and position management): same registry, same PIT rules."""
         evidence = {}
         replay = self.mode == "replay"
-        for var, required, max_age in HYPOTHESES[hypothesis]:
+        for var, required, max_age in self.hypotheses.get(hypothesis, HYPOTHESES.get(hypothesis, [])):
             cls = self.connectors.source_class(var)
             sources = self.connectors.approved(var, cls, replay=replay) if cls else []
             e = self.store.as_of(var, inst.contract_dict(), now, max_age, corr)
@@ -708,7 +730,7 @@ class PaperRuntime:
             evidence[var] = e
             if usable(e):
                 self._graph_evidence(e)
-        missing = [v for v, r, _ in HYPOTHESES[hypothesis] if r and not usable(evidence.get(v, {"status": "missing",
+        missing = [v for v, r, _ in self.hypotheses.get(hypothesis, HYPOTHESES.get(hypothesis, [])) if r and not usable(evidence.get(v, {"status": "missing",
                                                                                               "value": None}))]
         if missing:
             result["reasons"].append("REQUIRED_EVIDENCE_MISSING")

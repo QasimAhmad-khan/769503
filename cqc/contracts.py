@@ -101,6 +101,22 @@ EXTENSION_DEFS = {
             "EVIDENCE_SUPPORTS", "EVIDENCE_CONFLICT", "INSUFFICIENT_EVIDENCE", "COST_OR_RISK_CONCERN",
             "PREFER_SMALLER_SIZE", "NO_CANDIDATE_ADEQUATE", "STALE_OR_MISSING_DATA"]}},
     }, ["selected_id", "reason_codes"]),
+    "hypothesis_proposal": _obj("hypothesis_proposal", {
+        "proposals": {"type": "array", "minItems": 0, "maxItems": 8, "items": {
+            "type": "object", "additionalProperties": False, "properties": {
+                "template": {"type": "string", "minLength": 1, "maxLength": 64},
+                "rationale": {"type": "string", "minLength": 1, "maxLength": 200},
+                "data_needed": {"type": "array", "maxItems": 4, "items": {"enum": ["ohlc", "funding", "spread",
+                                                                                   "onchain_finalized"]}},
+                "falsification": {"type": "string", "minLength": 1, "maxLength": 200}},
+            "required": ["template", "rationale", "data_needed", "falsification"]}},
+        "reason_codes": _CODES}, ["proposals", "reason_codes"]),
+    "hypothesis_critique": _obj("hypothesis_critique", {
+        "template": {"type": "string", "minLength": 1, "maxLength": 64},
+        "verdict": {"enum": ["test", "reject_untestable", "reject_leakage_risk", "needs_data"]},
+        "concerns": {"type": "array", "maxItems": 7, "items": {"enum": ["small_sample", "multiple_testing",
+                     "data_availability", "leakage", "cost_sensitivity", "regime_dependence", "synthetic_artifact"]}},
+        "reason_codes": _CODES}, ["template", "verdict", "concerns", "reason_codes"]),
     # Host-built decision record. Generative-model output carries NO probability semantics.
     "decision_record": _obj("decision_record", {
         "decision_id": _ID, "snapshot_id": _ID, "candidate_ids": {"type": "array", "items": _ID, "maxItems": 4},
@@ -166,6 +182,10 @@ ROLE_RESULTS = {
 }
 ROLES = tuple(ROLE_RESULTS)
 
+# Offline research roles on the SAME Phi model (never part of the trading loop): propose / critique
+# hypotheses from the closed registry in cqc.research.signals. Deterministic code decides and tests.
+RESEARCH_ROLE_RESULTS = {"hypothesis_proposer": ["hypothesis_proposal"], "hypothesis_critic": ["hypothesis_critique"]}
+
 # Records written by the superseded Open-Jev selection path (ledgers from commit 1135387 and earlier).
 # They stay readable for audit but are never interpreted as Phi decisions or replay inputs.
 LEGACY_EVENT_KINDS = {"decision_receipt": "legacy_jev_selection_v1", "jev_raw_response": "legacy_jev_raw_response_v1"}
@@ -207,8 +227,9 @@ def validate(record: dict) -> dict:
 
 
 def validate_role_result(role: str, record: dict) -> dict:
-    if not isinstance(record, dict) or record.get("kind") not in ROLE_RESULTS[role]:
-        raise ContractError(f"{role} may only return {ROLE_RESULTS[role]}")
+    allowed = ROLE_RESULTS.get(role) or RESEARCH_ROLE_RESULTS.get(role, [])
+    if not isinstance(record, dict) or record.get("kind") not in allowed:
+        raise ContractError(f"{role} may only return {allowed}")
     return validate(record)
 
 

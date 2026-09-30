@@ -61,10 +61,14 @@ def body_schema(kind: str) -> dict:
 
 
 def role_schema(role: str, allowed_ids: list | None = None) -> dict:
-    kinds = contracts.ROLE_RESULTS[role]
+    kinds = contracts.ROLE_RESULTS.get(role) or contracts.RESEARCH_ROLE_RESULTS[role]
     bodies = [body_schema(k) for k in kinds]
     if role == "decision_maker":
         bodies[0]["properties"]["selected_id"] = {"enum": list(allowed_ids or []) + [ABSTAIN]}
+    if role == "hypothesis_proposer" and allowed_ids:
+        bodies[0]["properties"]["proposals"]["items"]["properties"]["template"] = {"enum": list(allowed_ids)}
+    if role == "hypothesis_critic" and allowed_ids:
+        bodies[0]["properties"]["template"] = {"enum": list(allowed_ids)}
     return {"oneOf": bodies} if len(bodies) > 1 else bodies[0]
 
 
@@ -149,6 +153,22 @@ class FakePhiBackend:
         best = max(p["candidates"], key=lambda c: (float(c["utility_lcb_quote"]), c["id"]))
         return {"kind": "decision_choice", "selected_id": best["id"], "reason_codes": ["EVIDENCE_SUPPORTS"]}
 
+    def _hypothesis_proposer(self, p, mode="ok"):
+        return {"kind": "hypothesis_proposal", "reason_codes": ["FAKE_PROPOSES_ALL_TESTABLE"],
+                "proposals": [{"template": t["template"], "rationale": t["mechanism"][:200], "data_needed": t["data"],
+                               "falsification": "dev walk-forward MTM after-cost CI lower bound <= 0"}
+                              for t in p["menu"] if all(d in p["available_data"] for d in t["data"])][:8]}
+
+    def _hypothesis_critic(self, p, mode="ok"):
+        concerns = ["multiple_testing"]
+        if p["family"] == "onchain":
+            concerns.append("data_availability")
+        if p.get("synthetic"):
+            concerns.append("synthetic_artifact")
+        verdict = "needs_data" if not p["data_available"] else "test"
+        return {"kind": "hypothesis_critique", "template": p["template"], "verdict": verdict, "concerns": concerns,
+                "reason_codes": ["FAKE_RULE_CRITIQUE"]}
+
     def _risk_analyst(self, p, mode="ok"):
         return {"kind": "adjustment_proposal", "status": "no_change", "trigger": p["trigger"][:64],
                 "position_refs": p["position_refs"][:8],
@@ -221,7 +241,8 @@ class RecordedPhiBackend:
 # ------------------------------------------------------------------ admission queue
 class InferenceQueue:
     """Thread-safe single-slot admission queue. Exactly one inference runs at a time."""
-    PRIORITY = {"risk_analyst": 0, "decision_maker": 1, "analyzer": 2, "screener": 2}
+    PRIORITY = {"risk_analyst": 0, "decision_maker": 1, "analyzer": 2, "screener": 2,
+                "hypothesis_proposer": 3, "hypothesis_critic": 3}  # offline research always yields
 
     def __init__(self, max_jobs: int, admission_deadline_s: float):
         self.max_jobs, self.deadline = max_jobs, admission_deadline_s
@@ -244,7 +265,7 @@ class InferenceQueue:
         t0 = time.monotonic()
         with self._cv:
             if len(self._heap) >= self.max_jobs:
-                research = [t for t in self._heap if t[2] in ("analyzer", "screener") and not t[3]]
+                research = [t for t in self._heap if self.PRIORITY[t[2]] >= 2 and not t[3]]
                 if self.PRIORITY[role] < 2 and research:
                     victim = max(research)
                     victim[3] = True  # shed newest, lowest-priority research
@@ -299,7 +320,7 @@ class PhiService:
         self.healthy = True
         self.stats = {"calls": 0, "schema_failures": 0, "timeouts": 0, "oom": 0, "context_rejects": 0,
                       "cache_hits": 0, "cache_misses": 0, "latency_ms": [], "queue_delay_ms": [], "tokens_in": [],
-                      "tokens_out": [], "by_role": {r: 0 for r in contracts.ROLES}}
+                      "tokens_out": [], "by_role": {r: 0 for r in (*contracts.ROLES, *contracts.RESEARCH_ROLE_RESULTS)}}
 
     @property
     def identity(self) -> dict:
@@ -313,7 +334,7 @@ class PhiService:
 
     def run(self, role: str, payload: dict, *, now: datetime, correlation_id: str, allowed_ids: list | None = None,
             synthetic: bool = True) -> dict:
-        if role not in contracts.ROLES:
+        if role not in contracts.ROLES and role not in contracts.RESEARCH_ROLE_RESULTS:
             raise PhiFailure(f"unknown role {role}")
         schema = role_schema(role, allowed_ids)
         system = system_prompt(role)

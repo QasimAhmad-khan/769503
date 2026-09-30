@@ -346,7 +346,8 @@ def four_roles_one_backend():
                    "max concurrent inference 1",
                    f"calls_by_role={by_role} producers={sorted(producers)} decision_backends={len(decisions)} "
                    f"max_concurrency={rt.phi.queue.max_active_seen}",
-                   all(by_role[r] > 0 for r in by_role) and same and rt.phi.queue.max_active_seen == 1)
+                   all(by_role[r] > 0 for r in ("screener", "analyzer", "decision_maker", "risk_analyst"))
+                   and by_role.get("hypothesis_proposer", 0) == 0 and same and rt.phi.queue.max_active_seen == 1)
 
 
 def feed_loss_blocks_entries():

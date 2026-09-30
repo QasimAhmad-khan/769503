@@ -68,6 +68,10 @@ def validate(raw: dict) -> None:
     _require(research["max_followup_rounds"] <= 1, "at most one follow-up evidence round")
     _require(research["required_evidence_missing"] == "ABSTAIN", "missing required evidence must ABSTAIN")
     _require(research["max_phi_calls_per_cycle"] >= 1, "bad Phi call budget")
+    if research.get("hypotheses"):
+        from .research.signals import REGISTRY
+        unknown = set(research["hypotheses"]) - set(REGISTRY)
+        _require(not unknown, f"unregistered research hypotheses: {sorted(unknown)}")
 
     risk = raw["paper_risk"]
     for key in ("max_equity_fraction_at_stop_per_new_trade", "max_aggregate_reserved_stop_risk_fraction",

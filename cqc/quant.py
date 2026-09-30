@@ -182,7 +182,9 @@ def build_entry_candidates(*, cfg, inst, bars15, cutoff: datetime, hypothesis: s
     horizon_bars = horizon_s // cfg["market"]["decision_bar_seconds"]
     closes = np.array([b.close for b in bars15])
     highs, lows = np.array([b.high for b in bars15]), np.array([b.low for b in bars15])
-    dirs = feats["trend_dir"] if hypothesis == "trend_breakout_v1" else feats["funding_dir"]
+    dirs = feats.get(f"dir:{hypothesis}")
+    if dirs is None:
+        dirs = feats["trend_dir"] if hypothesis == "trend_breakout_v1" else feats["funding_dir"]
     vol = float(feats["vol"][-1])
     analysis = {"hypothesis": hypothesis, "direction": direction, "vol_per_bar": vol, "reason_codes": []}
     if not math.isfinite(vol) or vol <= 0:

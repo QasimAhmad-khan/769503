@@ -8,6 +8,8 @@
   readiness   list live-readiness / promotion blockers (always non-empty in paper mode)
   validate    research validation program: freeze | dev | robustness | holdout | report | all
               (frozen manifest, hash-chained trial log, one-shot sealed holdout) -> reports/validation
+  validate2   research_v2 alpha-discovery program: propose | freeze | screen | dev | mc | robust | runtime | gates |
+              holdout | all  (research/v2, reports/validation_v2)
   bench-phi   real Phi benchmark on a GPU host: --endpoint name=url (repeatable; e.g. reference and 4-bit)
   check-phi   probe the ONE configured local Phi server: one call per role (screener, analyzer,
               decision_maker, risk_analyst) through the same backend, reporting schema validity and latency
@@ -69,13 +71,14 @@ def hardware():
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="cqc", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["demo", "faults", "evaluate", "replay", "soak", "readiness", "check-phi",
-                                        "validate", "bench-phi"])
+                                        "validate", "bench-phi", "validate2"])
     ap.add_argument("--out", default="reports")
     ap.add_argument("--days", type=float, default=3)
     ap.add_argument("--start-day", type=int, default=14)
     ap.add_argument("--db", default=":memory:")
     ap.add_argument("--config", default=None)
-    ap.add_argument("--phase", default="all", choices=["freeze", "dev", "robustness", "holdout", "report", "all"])
+    ap.add_argument("--phase", default="all", choices=["freeze", "dev", "robustness", "holdout", "report", "all",
+                                                       "propose", "screen", "mc", "robust", "runtime", "gates"])
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--endpoint", action="append", default=[], help="name=url of an OpenAI-compatible Phi server")
     ap.add_argument("--ledger", default=None, help="ledger with recorded decisions to build frozen candidate sets")
@@ -149,6 +152,13 @@ def main(argv=None):
             print(json.dumps(gates, indent=2))
         else:
             print(json.dumps({"phase": args.phase, "done": True}, indent=2))
+        return 0
+
+    if args.command == "validate2":
+        from .research import program_v2
+        res = program_v2.main(args.phase, args.workers)
+        print(json.dumps(res if args.phase in ("gates", "propose") else {"phase": args.phase, "done": True}, indent=2,
+                         default=str))
         return 0
 
     if args.command == "bench-phi":
