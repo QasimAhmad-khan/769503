@@ -1,0 +1,200 @@
+{
+  "schema_version": "1.0.0",
+  "purpose": "paper_research_profile_not_live_limits (derived from 05_PAPER_CONFIG.json; Jev provider switched to local Open-Jev)",
+  "mode": "paper",
+  "live_trading_enabled": false,
+  "autonomous_policy": "autonomous_evidence_v1",
+  "require_durable_audit_before_entry": true,
+  "new_risk_on_model_failure": "ABSTAIN",
+  "remote_llm_fallback_enabled": false,
+  "market": {
+    "venue": "SIMULATED",
+    "product": "linear_usdt_perpetual",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "position_mode": "one_way",
+    "margin_mode": "isolated_if_supported",
+    "decision_bar_seconds": 900,
+    "forecast_horizon_seconds": 14400,
+    "max_holding_seconds": 14400
+  },
+  "phi": {
+    "model": "microsoft/Phi-4-mini-instruct",
+    "model_revision": "RESOLVE_AND_PIN",
+    "runtime": "SELECT_AFTER_GPU_DISCOVERY",
+    "quantization": "BENCHMARK_SUPPORTED_4BIT_AGAINST_REFERENCE",
+    "resident_model_processes": 1,
+    "active_sequences": 1,
+    "max_total_tokens": 4096,
+    "max_output_tokens": 384,
+    "max_queue_jobs": 16,
+    "request_deadline_seconds": 8,
+    "max_schema_repair_retries": 1,
+    "roles": [
+      "screener",
+      "analyzer",
+      "risk_analyst"
+    ],
+    "backend": "fake",
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions"
+  },
+  "jev": {
+    "provider": "open_jev",
+    "api_base_url": "http://127.0.0.1:8791/v1",
+    "model": "ZefanCai/Open-Jev-9B",
+    "model_revision": "RESOLVE_AND_PIN",
+    "base_model": "Qwen/Qwen3.5-9B",
+    "source_repository": "https://github.com/Zefan-Cai/Open-Jev",
+    "verify_model_at_build": true,
+    "timeout_seconds": 8,
+    "max_state_tokens": 2000,
+    "max_trade_candidates": 4,
+    "always_include_abstain": true,
+    "probability_sum_tolerance": 1e-06,
+    "experimental_min_choice_score": null,
+    "api_key_source": "none for loopback Open-Jev; JEV_API_KEY env var only if provider=typesafe",
+    "calibration_artifact_id": null,
+    "live_requires_locked_calibration": true,
+    "prompt_version": "selection_v1"
+  },
+  "research": {
+    "max_assets_per_cycle": 2,
+    "max_features_per_request": 8,
+    "max_followup_rounds": 1,
+    "max_connector_calls_per_request": 4,
+    "max_cycle_seconds": 30,
+    "max_phi_calls_per_cycle": 6,
+    "max_jev_calls_per_cycle": 2,
+    "on_chain_mode": "forward_capture_until_point_in_time_history_exists",
+    "required_evidence_missing": "ABSTAIN",
+    "news_enabled": false,
+    "social_enabled": false
+  },
+  "paper_risk": {
+    "starting_equity_usdt": "10000",
+    "max_equity_fraction_at_stop_per_new_trade": 0.0025,
+    "max_aggregate_reserved_stop_risk_fraction": 0.01,
+    "max_gross_notional_over_equity": 1.0,
+    "max_symbol_notional_over_equity": 0.25,
+    "max_venue_leverage_setting": 2,
+    "daily_loss_fraction_stop_new_risk": 0.01,
+    "peak_drawdown_fraction_reduce_only": 0.03,
+    "daily_reference_timezone": "UTC",
+    "watchdog_seconds": 1,
+    "risk_reaction_p99_target_ms": 100,
+    "max_core_quote_age_seconds": 3,
+    "max_account_snapshot_age_seconds": 10,
+    "allow_stop_loosening": false,
+    "allow_leverage_increase_after_entry": false,
+    "venue_margin_rules": "REQUIRED_BEFORE_REAL_VENUE_READINESS",
+    "protective_orders_required_for_real_venue": true
+  },
+  "graph": {
+    "max_hops": 2,
+    "max_nodes_per_context": 32,
+    "max_edges_per_context": 64,
+    "max_serialized_bytes": 16384,
+    "max_tokens_per_context": 2000,
+    "store": "existing_postgresql",
+    "bulk_numeric_history_in_graph": false,
+    "unbounded_conversation_memory": false
+  },
+  "resources": {
+    "host_ram_budget_gib": null,
+    "gpu_vram_budget_gib": null,
+    "required_measured_headroom_fraction": 0.2,
+    "readiness_requires_measured_budgets": true,
+    "raw_replay_retention_days": 30,
+    "feature_retention_days": 365,
+    "audit_retention_days": 365,
+    "disk_quota_gib": null,
+    "unresolved_current_positions_and_orders_never_pruned": true,
+    "engineering_soak_hours": 24
+  },
+  "promotion": {
+    "auto_promote": false,
+    "operator_approval_required": true,
+    "research_manifest_id": null,
+    "minimum_effective_sample_count": null,
+    "net_ev_hurdle_quote": null,
+    "paired_improvement_hurdle": null,
+    "required_confidence_method": null,
+    "prospective_evaluation_complete": false,
+    "unresolved_fields_block_promotion": true
+  },
+  "venue_sim": {
+    "taker_fee_rate": "0.0005",
+    "maker_fee_rate": "0.0002",
+    "funding_interval_hours": 8,
+    "max_fill_fraction_of_bar_volume": "0.02",
+    "stress_slippage_bps": "10",
+    "instruments": {
+      "BTCUSDT": {
+        "venue": "SIMULATED",
+        "symbol": "BTCUSDT-PERP",
+        "product": "linear_perpetual",
+        "base_asset": "BTC",
+        "quote_asset": "USDT",
+        "settle_asset": "USDT",
+        "base_units_per_contract": "0.001",
+        "quantity_step_contracts": "1",
+        "price_tick": "0.1",
+        "min_contracts": "1",
+        "max_contracts": "100000",
+        "min_notional_quote": "5"
+      },
+      "ETHUSDT": {
+        "venue": "SIMULATED",
+        "symbol": "ETHUSDT-PERP",
+        "product": "linear_perpetual",
+        "base_asset": "ETH",
+        "quote_asset": "USDT",
+        "settle_asset": "USDT",
+        "base_units_per_contract": "0.01",
+        "quantity_step_contracts": "1",
+        "price_tick": "0.01",
+        "min_contracts": "1",
+        "max_contracts": "100000",
+        "min_notional_quote": "5"
+      }
+    },
+    "maintenance_margin_tiers": [
+      {
+        "max_notional_quote": "50000",
+        "mmr": "0.005",
+        "maintenance_amount_quote": "0"
+      },
+      {
+        "max_notional_quote": "250000",
+        "mmr": "0.01",
+        "maintenance_amount_quote": "250"
+      },
+      {
+        "max_notional_quote": "1000000",
+        "mmr": "0.025",
+        "maintenance_amount_quote": "4000"
+      }
+    ]
+  },
+  "quant": {
+    "vol_window_bars": 96,
+    "trend_fast_bars": 8,
+    "trend_slow_bars": 48,
+    "trend_entry_z": 0.5,
+    "funding_extreme_rate": "0.0003",
+    "stop_vol_multiple": "2.0",
+    "lcb_z": 1.64,
+    "min_effective_samples": 20,
+    "net_ev_hurdle_quote": "0",
+    "history_bars": 2000,
+    "max_spread_bps": "8",
+    "price_envelope_bps": "15",
+    "plan_ttl_seconds": 120,
+    "size_fractions": [
+      "1.0",
+      "0.5"
+    ]
+  }
+}
