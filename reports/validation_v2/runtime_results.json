@@ -1,0 +1,1365 @@
+{
+  "wall_seconds": 999.8,
+  "ablations": {
+    "P0_deterministic": {
+      "name": "P0_deterministic",
+      "stress_spec": null,
+      "invariants": {
+        "minutes_checked": 64800,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": 0.51,
+      "sharpe_ann": 1.0349069799840052,
+      "trades": 79,
+      "worst_trade": -22.5951025,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "P1_phi_screening": {
+      "name": "P1_phi_screening",
+      "stress_spec": null,
+      "invariants": {
+        "minutes_checked": 64800,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": 0.51,
+      "sharpe_ann": 1.0349069799840052,
+      "trades": 79,
+      "worst_trade": -22.5951025,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 7870,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "P2_screening_analysis": {
+      "name": "P2_screening_analysis",
+      "stress_spec": null,
+      "invariants": {
+        "minutes_checked": 64800,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": 0.51,
+      "sharpe_ann": 1.0349069799840052,
+      "trades": 79,
+      "worst_trade": -22.5951025,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 7953,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "P3_all_four_roles": {
+      "name": "P3_all_four_roles",
+      "stress_spec": null,
+      "invariants": {
+        "minutes_checked": 64800,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": 0.51,
+      "sharpe_ann": 1.0349069799840052,
+      "trades": 79,
+      "worst_trade": -22.5951025,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 8036,
+      "decision_isolation": {
+        "decisions": 83,
+        "agree_with_rank": 83
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "P4_all_four_no_onchain": {
+      "name": "P4_all_four_no_onchain",
+      "stress_spec": null,
+      "invariants": {
+        "minutes_checked": 64800,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": 0.51,
+      "sharpe_ann": 1.0349069799840052,
+      "trades": 79,
+      "worst_trade": -22.5951025,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 8036,
+      "decision_isolation": {
+        "decisions": 83,
+        "agree_with_rank": 83
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    }
+  },
+  "paired_vs_P0": {
+    "P1_phi_screening": {
+      "net_diff_pct": 0.0,
+      "reading": "identical",
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      }
+    },
+    "P2_screening_analysis": {
+      "net_diff_pct": 0.0,
+      "reading": "identical",
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      }
+    },
+    "P3_all_four_roles": {
+      "net_diff_pct": 0.0,
+      "reading": "identical",
+      "decision_isolation": {
+        "decisions": 83,
+        "agree_with_rank": 83
+      }
+    },
+    "P4_all_four_no_onchain": {
+      "net_diff_pct": 0.0,
+      "reading": "identical",
+      "decision_isolation": {
+        "decisions": 83,
+        "agree_with_rank": 83
+      }
+    }
+  },
+  "stress_strategy": {
+    "hypothesis": "volatility_breakout_v1",
+    "params": {
+      "c": 0.8,
+      "m": 96,
+      "n": 16
+    }
+  },
+  "stress": {
+    "stress:crash_-15pct_1h": {
+      "name": "stress:crash_-15pct_1h",
+      "stress_spec": {
+        "kind": "ramp",
+        "move": -0.15,
+        "minutes": 60,
+        "symbols": "both"
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": 1.1323,
+      "sharpe_ann": 8.51853005540755,
+      "trades": 3,
+      "worst_trade": -9.2571486,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "stress:short_squeeze_+20pct_30m": {
+      "name": "stress:short_squeeze_+20pct_30m",
+      "stress_spec": {
+        "kind": "ramp",
+        "move": 0.2,
+        "minutes": 30,
+        "symbols": "both"
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": -0.2687,
+      "sharpe_ann": -8.544003745317532,
+      "trades": 1,
+      "worst_trade": -26.8706448,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "stress:vol_regime_x3_24h": {
+      "name": "stress:vol_regime_x3_24h",
+      "stress_spec": {
+        "kind": "vol",
+        "mult": 3.0,
+        "minutes": 1440
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": -0.028,
+      "sharpe_ann": -8.54400374531753,
+      "trades": 1,
+      "worst_trade": -2.795003093713159,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "stress:correlated_drop_-8pct_15m": {
+      "name": "stress:correlated_drop_-8pct_15m",
+      "stress_spec": {
+        "kind": "ramp",
+        "move": -0.08,
+        "minutes": 15,
+        "symbols": "both"
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": 0.5871,
+      "sharpe_ann": 8.32896325157439,
+      "trades": 3,
+      "worst_trade": -10.0189161,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "stress:liquidation_cascade_gap_-25pct": {
+      "name": "stress:liquidation_cascade_gap_-25pct",
+      "stress_spec": {
+        "kind": "gap",
+        "move": -0.25,
+        "spread_mult": 20,
+        "volume_mult": 0.05,
+        "minutes": 30
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": 1.9066,
+      "sharpe_ann": 8.544003745317529,
+      "trades": 1,
+      "worst_trade": 190.6590229161873,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "stress:squeeze_gap_+25pct": {
+      "name": "stress:squeeze_gap_+25pct",
+      "stress_spec": {
+        "kind": "gap",
+        "move": 0.25,
+        "spread_mult": 20,
+        "volume_mult": 0.05,
+        "minutes": 30
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": -1.9992,
+      "sharpe_ann": -8.544003745317532,
+      "trades": 1,
+      "worst_trade": -199.9209267,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ],
+        [
+          "NORMAL",
+          "NO_NEW_RISK",
+          "daily_loss"
+        ],
+        [
+          "NO_NEW_RISK",
+          "NORMAL",
+          "clear:daily_loss"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "stress:repeated_losses_whipsaw_2d": {
+      "name": "stress:repeated_losses_whipsaw_2d",
+      "stress_spec": {
+        "kind": "whipsaw",
+        "step": 0.03,
+        "every_minutes": 120,
+        "minutes": 2880
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": -0.283,
+      "sharpe_ann": -8.54400374531753,
+      "trades": 1,
+      "worst_trade": -28.2969576,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "stress:exchange_outage_45m": {
+      "name": "stress:exchange_outage_45m",
+      "stress_spec": {
+        "kind": "none",
+        "outage_minutes": 45
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": -0.193,
+      "sharpe_ann": -11.268407686973848,
+      "trades": 2,
+      "worst_trade": -15.1037845,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    },
+    "stress:stale_feed_20m": {
+      "name": "stress:stale_feed_20m",
+      "stress_spec": {
+        "kind": "drop",
+        "minutes": 20
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": -0.0419,
+      "sharpe_ann": -8.54400374531753,
+      "trades": 1,
+      "worst_trade": -4.193102045083602,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ],
+        [
+          "NORMAL",
+          "NO_NEW_RISK",
+          "stale_feed"
+        ],
+        [
+          "NO_NEW_RISK",
+          "NORMAL",
+          "clear:stale_account"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 2,
+      "budget_per_trade": 25.0
+    },
+    "stress:delayed_onchain_+5h": {
+      "name": "stress:delayed_onchain_+5h",
+      "stress_spec": {
+        "kind": "none",
+        "onchain_extra_confirmations": 30
+      },
+      "invariants": {
+        "minutes_checked": 5760,
+        "violations": [],
+        "passed": true,
+        "liquidations": 0
+      },
+      "net_pct": -0.193,
+      "sharpe_ann": -11.268407686973848,
+      "trades": 2,
+      "worst_trade": -15.1037845,
+      "first_entry_ts": "2026-09-09T14:02:00Z",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective_actions": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ],
+      "final_state": "NORMAL",
+      "phi_calls": 0,
+      "decision_isolation": {
+        "decisions": 0,
+        "agree_with_rank": 0
+      },
+      "admission_rejections": 0,
+      "budget_per_trade": 25.0
+    }
+  },
+  "stress_checks": {
+    "stress:crash_-15pct_1h": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -9.2571486,
+      "loss_bound": 299.99999999999994,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ]
+      ]
+    },
+    "stress:short_squeeze_+20pct_30m": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -26.8706448,
+      "loss_bound": 400.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ]
+      ]
+    },
+    "stress:vol_regime_x3_24h": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -2.795003093713159,
+      "loss_bound": 50.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ]
+    },
+    "stress:correlated_drop_-8pct_15m": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -10.0189161,
+      "loss_bound": 200.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ]
+      ]
+    },
+    "stress:liquidation_cascade_gap_-25pct": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": 190.6590229161873,
+      "loss_bound": 500.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ]
+    },
+    "stress:squeeze_gap_+25pct": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -199.9209267,
+      "loss_bound": 500.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ],
+        [
+          "NORMAL",
+          "NO_NEW_RISK",
+          "daily_loss"
+        ],
+        [
+          "NO_NEW_RISK",
+          "NORMAL",
+          "clear:daily_loss"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ]
+      ]
+    },
+    "stress:repeated_losses_whipsaw_2d": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -28.2969576,
+      "loss_bound": 50.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ]
+      ]
+    },
+    "stress:exchange_outage_45m": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -15.1037845,
+      "loss_bound": 50.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ]
+    },
+    "stress:stale_feed_20m": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -4.193102045083602,
+      "loss_bound": 50.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ],
+        [
+          "NORMAL",
+          "NO_NEW_RISK",
+          "stale_feed"
+        ],
+        [
+          "NO_NEW_RISK",
+          "NORMAL",
+          "clear:stale_account"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ]
+    },
+    "stress:delayed_onchain_+5h": {
+      "verdict": "PASS",
+      "reasons": [],
+      "worst_trade": -15.1037845,
+      "loss_bound": 50.0,
+      "final_state": "NORMAL",
+      "risk_events": [
+        [
+          "NORMAL",
+          "RECOVERY",
+          "startup_recovery"
+        ],
+        [
+          "RECOVERY",
+          "NORMAL",
+          "clear:startup_recovery"
+        ]
+      ],
+      "protective": [
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ],
+        [
+          "stop_market",
+          "protect_position"
+        ],
+        [
+          "market",
+          "max_holding_time"
+        ]
+      ]
+    }
+  }
+}

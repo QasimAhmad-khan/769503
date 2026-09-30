@@ -1,0 +1,82 @@
+{
+  "G1_walkforward_oos": [
+    "FAIL (SYNTHETIC ONLY)",
+    "OOS daily mean 0.000415, CI [-0.0001, 0.0009]"
+  ],
+  "G2_effective_sample": [
+    "PASS (SYNTHETIC ONLY)",
+    "66 effective dev trades"
+  ],
+  "G3_deflated_sharpe": [
+    "PASS (SYNTHETIC ONLY)",
+    "DSR 0.9583 with N=39 trials"
+  ],
+  "G4_pbo": [
+    "PASS (SYNTHETIC ONLY)",
+    "PBO 0.0198"
+  ],
+  "G5_parameter_stability": [
+    "FAIL (SYNTHETIC ONLY)",
+    "candidate 6.6744; neighbours [None, 2.8169]"
+  ],
+  "G6_negative_controls": [
+    "PASS (SYNTHETIC ONLY)",
+    "candidate 6.6744 vs p95 randomized 3.3299, shifted 3.6272"
+  ],
+  "G7_cost_robustness": [
+    "PASS (SYNTHETIC ONLY)",
+    "break-even cost x4.0, correlated exec MC P(net<0) 0.0144"
+  ],
+  "G8_latency": [
+    "PASS (SYNTHETIC ONLY)",
+    "break-even latency 7.367 bars"
+  ],
+  "G10_regimes": [
+    "PASS (SYNTHETIC ONLY)",
+    "1 powered of 9 regimes"
+  ],
+  "L1_lookahead_e2e": [
+    "PASS",
+    "1919 bars compared after corrupting future data"
+  ],
+  "G9_market_path_mc": [
+    "PASS (SYNTHETIC ONLY)",
+    "primary median net 0.4402%, P(DD>3%) 0.0002, median sign by config {'primary': True, 'moving_16': True, 'moving_96': True, 'moving_288': True, 'stationary_16': True, 'stationary_288': True}"
+  ],
+  "G11_event_driven_consistency": [
+    "PASS (SYNTHETIC ONLY)",
+    "event-driven dev net 0.51%, trades 79, invariants True"
+  ],
+  "S1_stress_safety": [
+    "PASS",
+    "10/10 scenarios; failures: {}"
+  ],
+  "DEV_SURVIVOR": [
+    "NONE",
+    "all development gates must pass"
+  ],
+  "E_phi_value": [
+    "UNTESTED",
+    "fake Phi = deterministic ranker (identical ablations); real Phi not available"
+  ],
+  "R_real_phi_benchmark": [
+    "UNTESTED",
+    "no GPU/weights in this container; `python -m cqc bench-phi` on a GPU host"
+  ],
+  "R_fine_tuning": [
+    "UNTESTED",
+    "train-only dataset export provided; no GPU to fine-tune"
+  ],
+  "R_24h_soak_real_services": [
+    "UNTESTED",
+    "requires the real Phi server"
+  ],
+  "D_real_point_in_time_data": [
+    "UNTESTED",
+    "no real exchange/on-chain captures reachable"
+  ],
+  "ALPHA_VERDICT": [
+    "UNTESTED",
+    "synthetic data only; NO VERIFIED EDGE"
+  ]
+}

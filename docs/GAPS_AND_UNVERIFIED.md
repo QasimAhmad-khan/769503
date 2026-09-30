@@ -1,5 +1,11 @@
 # Measured, unverified and still missing
 
+> **research_v2 update:** no candidate survived development. The best candidate, V2T25 (volatility breakout), failed
+> G1 (out-of-sample CI includes 0) and G5 (parameter fragility; a 10-minute decision shift turns it negative). The
+> screener entry gate was cold-started, which overstated results (disclosed; fixed via `warm_from`). All 10 stress
+> scenarios passed the safety checks; a +25% gap cost 8x the per-trade budget, within the pre-declared stress bound.
+> Alpha and Phi value are UNTESTED. See `docs/VALIDATION_REPORT_V2.md`.
+
 > **Update (validation program, research_v1):** `docs/VALIDATION_REPORT.md` holds the gate table. Safety
 > invariants and leakage checks PASS across 63 runs. On the synthetic fixture the economic outcome is
 > **NO VERIFIED EDGE**: the holdout failed, PBO is 0.91, and the sealed holdout produced zero trades. The

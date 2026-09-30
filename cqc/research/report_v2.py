@@ -104,6 +104,31 @@ def render() -> str:
         for k, v in rt["stress_checks"].items():
             L.append(f"| {k.replace('stress:', '')} | {v['verdict']} | {v['worst_trade']} | {round(v['loss_bound'], 1)} | "
                      f"{v['final_state']} | {v['protective']} | {v['reasons']} |")
+    ft = _j("finetune_export.json")
+    L += ["", "## Why nothing survived, and what is needed next", "",
+          "1. **G1 fails**: the purged walk-forward out-of-sample mean daily return's 90% CI includes zero. The evidence is "
+          "not strong enough even on synthetic data.",
+          "2. **G5 fails**: the candidate is parameter-fragile. One grid neighbour never trades and the other keeps under "
+          "half the Sharpe. Shifting the decision clock by 10 minutes turns the dev result negative, so the result depends "
+          "on bar alignment.",
+          "3. **Fidelity gap** (see diagnoses): the screener's cold-start entry gate overstated trades that start at the dev "
+          "boundary, and the event-driven simulator earns much less (+0.51% vs +1.87%) because of 1-minute execution, "
+          "price envelopes, TTLs and sizing rooms. Screening must be warm-started (`warm_from`) and finalists must be "
+          "judged on the event-driven simulator.",
+          "4. **Synthetic artifacts**: breakout and trend edges exist because the generator switches drift regimes every "
+          "4 hours. The on-chain hypothesis passed train eligibility on pure-noise on-chain data, a live illustration "
+          "of multiple-testing false positives.",
+          "5. **Phi value is unmeasurable here**: the fake decision maker agreed with the ranker on 83/83 decisions.", "",
+          "**Outcome: NO VERIFIED EDGE; alpha and Phi value UNTESTED. The research_v2 holdout stays sealed.**", "",
+          "Needed next (research_v3, new manifest):",
+          "- Real point-in-time exchange data (trades, L2, mark/index, funding with receive timestamps) for BTC/ETH plus a "
+          "point-in-time listing universe; forward-captured on-chain data with finality.",
+          "- The real pinned Phi model measured with `bench-phi` (for example via `deploy/colab_phi_benchmark.ipynb` or a "
+          "local GPU), then P0-P4 on identical offered candidate sets.",
+          "- Screener gate warm-start and event-driven evaluation of every finalist; decision-time offsets pre-registered "
+          "as a robustness gate; a wider but still bounded neighbourhood grid, so stability can be assessed.",
+          "- Hypotheses with more independent observations per unit time (more instruments), to power the regime slices.", "",
+          f"Fine-tune dataset (train only): {ft}", ""]
     L += ["", "## Holdout", "", f"{json.dumps(hold) if hold and hold.get('opened', True) else 'Not opened: no candidate survived development; the research_v2 holdout stays sealed for a future pre-registered candidate.'}",
           "", "## Trial-log decisions and diagnoses", ""]
     for e in log.entries():

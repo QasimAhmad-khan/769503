@@ -116,3 +116,23 @@ python -m cqc readiness      # exit 1, 16 blockers (expected)
 - Report-rule correction after the holdout: a zero-trade tail gate is INCONCLUSIVE (stricter only).
   This is disclosed in the trial log.
 - Outcome: NO VERIFIED EDGE (synthetic). Investment verdict UNTESTED.
+
+---
+
+# Work log: research_v2 (alpha discovery and simulation)
+
+- Base `9da32ae`. Added:
+  - `cqc/research/{signals,vbt,program_v2,stress,report_v2,finetune_export}.py`
+  - offline Phi research roles (hypothesis proposer and critic) on the same backend, at lowest queue priority
+  - runtime support for registered research hypotheses
+  - `deploy/colab_phi_benchmark.ipynb` (not executed here)
+- Tests: 95 passed.
+- Run `python -m cqc validate2 --phase {propose..holdout}`:
+  - 6 hypotheses proposed and critiqued, 27 trials (budget 48), 10 train-eligible
+  - walk-forward selected V2T25
+  - 10,000 Monte Carlo paths, 5,000 correlated execution draws, 400 negative controls, 10 stress scenarios, P0-P4
+    event-driven
+- Outcome: no development survivor (G1 and G5 FAIL), holdout not opened, NO VERIFIED EDGE; alpha and Phi value
+  UNTESTED.
+- Diagnoses logged: the screener's cold-start entry gate is a fidelity defect. It was not re-screened within the
+  budget, and the fix is carried into research_v3.

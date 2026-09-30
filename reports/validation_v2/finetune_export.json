@@ -1,0 +1,8 @@
+{
+  "examples": 80,
+  "dropped_after_train_cutoff": 0,
+  "label_equals_ranker": 48,
+  "abstain_labels": 32,
+  "path": "/home/user/769503/reports/validation_v2/finetune_train_only.jsonl",
+  "status": "dataset only; fine-tuning UNTESTED (no GPU)"
+}

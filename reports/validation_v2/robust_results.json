@@ -1,0 +1,312 @@
+{
+  "wall_seconds": 1042.7,
+  "base_dev": {
+    "net_return_pct": 2.9759,
+    "sharpe_ann_mtm": 6.6744,
+    "days": 46,
+    "trades": 47,
+    "effective_trades": 43,
+    "expectancy_quote": 6.3317,
+    "max_drawdown_pct": 0.6544,
+    "longest_under_water_bars": 708,
+    "cvar95_daily_pct": -0.2099,
+    "liquidations": 0,
+    "limit_breach_bars": {
+      "daily_loss": 0,
+      "drawdown": 0
+    }
+  },
+  "execution_mc": {
+    "draws": 5000,
+    "rho": 0.6,
+    "net_return_pct": {
+      "q05": 0.4448,
+      "q50": 2.2951,
+      "q95": 3.2209,
+      "mean": 2.1515
+    },
+    "sharpe_ann": {
+      "q05": 1.3942,
+      "q50": 5.0284,
+      "q95": 6.6226,
+      "mean": 4.7712
+    },
+    "p_net_negative": 0.0144,
+    "p_net_negative_top_decile_stress": 0.124,
+    "corr_stress_vs_net": -0.7584
+  },
+  "cost_multiplier_curve": [
+    [
+      0.5,
+      3.4007
+    ],
+    [
+      1,
+      2.9759
+    ],
+    [
+      1.5,
+      1.4029
+    ],
+    [
+      2,
+      0.6018
+    ],
+    [
+      3,
+      0.082
+    ],
+    [
+      4,
+      0.0
+    ],
+    [
+      6,
+      0.0
+    ],
+    [
+      8,
+      0.0
+    ]
+  ],
+  "break_even_cost_multiplier": 4.0,
+  "latency_curve_bars": [
+    [
+      0,
+      2.9759
+    ],
+    [
+      1,
+      2.4602
+    ],
+    [
+      2,
+      2.0864
+    ],
+    [
+      3,
+      1.7879
+    ],
+    [
+      4,
+      1.1194
+    ],
+    [
+      5,
+      0.8058
+    ],
+    [
+      6,
+      0.6762
+    ],
+    [
+      7,
+      0.074
+    ],
+    [
+      8,
+      -0.1279
+    ]
+  ],
+  "break_even_latency_bars": 7.367,
+  "neighbors": [
+    {
+      "params": {
+        "c": 0.6,
+        "m": 96,
+        "n": 16
+      },
+      "sharpe_ann_mtm": null,
+      "net_return_pct": 0.0,
+      "trades": 0
+    },
+    {
+      "params": {
+        "c": 0.8,
+        "m": 96,
+        "n": 32
+      },
+      "sharpe_ann_mtm": 2.8169,
+      "net_return_pct": 0.008,
+      "trades": 1
+    }
+  ],
+  "decision_time_offsets": {
+    "5": {
+      "net_return_pct": 1.0997,
+      "sharpe_ann_mtm": 2.6912,
+      "days": 45,
+      "trades": 36,
+      "effective_trades": 35,
+      "expectancy_quote": 3.0547,
+      "max_drawdown_pct": 0.7708,
+      "longest_under_water_bars": 1085,
+      "cvar95_daily_pct": -0.2515,
+      "liquidations": 0,
+      "limit_breach_bars": {
+        "daily_loss": 0,
+        "drawdown": 0
+      }
+    },
+    "10": {
+      "net_return_pct": -0.208,
+      "sharpe_ann_mtm": -0.6777,
+      "days": 45,
+      "trades": 35,
+      "effective_trades": 33,
+      "expectancy_quote": -0.5942,
+      "max_drawdown_pct": 0.8608,
+      "longest_under_water_bars": 2928,
+      "cvar95_daily_pct": -0.245,
+      "liquidations": 0,
+      "limit_breach_bars": {
+        "daily_loss": 0,
+        "drawdown": 0
+      }
+    }
+  },
+  "negative_controls": {
+    "rand": {
+      "sharpe_ann": {
+        "q05": -4.2264,
+        "q50": -1.4595,
+        "q95": 3.3299,
+        "mean": -1.1368
+      },
+      "p95": 3.3299,
+      "candidate_percentile": 1.0
+    },
+    "shift": {
+      "sharpe_ann": {
+        "q05": -4.5525,
+        "q50": -0.7584,
+        "q95": 3.6272,
+        "mean": -0.6995
+      },
+      "p95": 3.6272,
+      "candidate_percentile": 1.0
+    }
+  },
+  "onchain_delay": {
+    "3600": {
+      "net_return_pct": 2.9759,
+      "sharpe_ann_mtm": 6.6744,
+      "days": 46,
+      "trades": 47,
+      "effective_trades": 43,
+      "expectancy_quote": 6.3317,
+      "max_drawdown_pct": 0.6544,
+      "longest_under_water_bars": 708,
+      "cvar95_daily_pct": -0.2099,
+      "liquidations": 0,
+      "limit_breach_bars": {
+        "daily_loss": 0,
+        "drawdown": 0
+      }
+    },
+    "21600": {
+      "net_return_pct": 2.9759,
+      "sharpe_ann_mtm": 6.6744,
+      "days": 46,
+      "trades": 47,
+      "effective_trades": 43,
+      "expectancy_quote": 6.3317,
+      "max_drawdown_pct": 0.6544,
+      "longest_under_water_bars": 708,
+      "cvar95_daily_pct": -0.2099,
+      "liquidations": 0,
+      "limit_breach_bars": {
+        "daily_loss": 0,
+        "drawdown": 0
+      }
+    }
+  },
+  "regimes": {
+    "bear": {
+      "days": 23,
+      "trades": 31,
+      "effective_trades": 28,
+      "expectancy": 9.9146,
+      "ci90": null,
+      "verdict": "INCONCLUSIVE (underpowered)"
+    },
+    "bull": {
+      "days": 22,
+      "trades": 16,
+      "effective_trades": 15,
+      "expectancy": -0.6102,
+      "ci90": null,
+      "verdict": "INCONCLUSIVE (underpowered)"
+    },
+    "chop": {
+      "days": 21,
+      "trades": 23,
+      "effective_trades": 19,
+      "expectancy": 2.3644,
+      "ci90": null,
+      "verdict": "INCONCLUSIVE (underpowered)"
+    },
+    "correlated_shock": {
+      "days": 7,
+      "trades": 7,
+      "effective_trades": 7,
+      "expectancy": 19.3821,
+      "ci90": null,
+      "verdict": "INCONCLUSIVE (underpowered)"
+    },
+    "funding_extreme": {
+      "days": 45,
+      "trades": 47,
+      "effective_trades": 43,
+      "expectancy": 6.3317,
+      "ci90": [
+        2.9288,
+        9.8658
+      ],
+      "verdict": "PASS"
+    },
+    "high_vol": {
+      "days": 22,
+      "trades": 19,
+      "effective_trades": 18,
+      "expectancy": 5.7543,
+      "ci90": null,
+      "verdict": "INCONCLUSIVE (underpowered)"
+    },
+    "low_vol": {
+      "days": 23,
+      "trades": 28,
+      "effective_trades": 25,
+      "expectancy": 6.7235,
+      "ci90": null,
+      "verdict": "INCONCLUSIVE (underpowered)"
+    },
+    "trend": {
+      "days": 24,
+      "trades": 24,
+      "effective_trades": 24,
+      "expectancy": 10.1337,
+      "ci90": null,
+      "verdict": "INCONCLUSIVE (underpowered)"
+    },
+    "weekend_illiquid": {
+      "days": 12,
+      "trades": 11,
+      "effective_trades": 8,
+      "expectancy": -1.6815,
+      "ci90": null,
+      "verdict": "INCONCLUSIVE (underpowered)"
+    }
+  },
+  "leakage": {
+    "equity_before_corruption_unchanged": true,
+    "bars_compared": 1919,
+    "survivorship": "universe fixed to BTC/ETH survivors: a real study must use a point-in-time listing universe"
+  },
+  "data_quality": {
+    "ingest_dispositions": {
+      "accepted": 518400
+    },
+    "note": "synthetic data is clean by construction; real feeds will not be"
+  }
+}

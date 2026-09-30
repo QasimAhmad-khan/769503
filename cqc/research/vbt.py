@@ -40,7 +40,9 @@ def build_ctx(bars15: list, onchain: np.ndarray | None = None) -> dict:
 
 def run(ctxs: dict, dirs: dict, start: int, end: int, *, hold_bars: int = 16, stop_mult: float = 2.0,
         lcb_z: float = 1.64, min_eff: int = 20, lookback: int = 2000, exec_params: dict | None = None,
-        equity0: float = 10000.0, seed: int = 0, gate: bool = True) -> dict:
+        equity0: float = 10000.0, seed: int = 0, gate: bool = True, warm_from: int | None = None) -> dict:
+    """`warm_from`: bar index from which matured outcomes may seed the entry gate before `start` (no trading
+    before `start`). None reproduces the research_v2 frozen behaviour (gate memory starts empty at `start`)."""
     ex = dict(BASE_EXEC, **(exec_params or {}))
     rng = np.random.default_rng(seed)
     syms = sorted(ctxs)
@@ -57,7 +59,9 @@ def run(ctxs: dict, dirs: dict, start: int, end: int, *, hold_bars: int = 16, st
     pending = {s: deque() for s in syms}  # (signal_idx, dir) awaiting maturity
     breaches = {"daily_loss": 0, "drawdown": 0}
     peak, day_start_eq, cur_day = equity0, equity0, None
-    for i in range(max(start, 1), end):
+    first = max(start, 1) if warm_from is None else max(warm_from, 1)
+    for i in range(first, end):
+        warm = i < start
         for s in syms:
             c = ctxs[s]
             half = c["close"][i] * c["spread_bps"][i] / 2e4 * ex["spread_mult"]
@@ -71,6 +75,8 @@ def run(ctxs: dict, dirs: dict, start: int, end: int, *, hold_bars: int = 16, st
             dsig = int(dirs[s][sig_i]) if sig_i >= 0 else 0
             if dsig != 0 and sig_i >= 0 and (not pending[s] or pending[s][-1][0] != sig_i):
                 pending[s].append((sig_i, dsig))
+            if warm:
+                continue
             p = pos[s]
             # --- manage open position
             if p is not None:
@@ -122,6 +128,8 @@ def run(ctxs: dict, dirs: dict, start: int, end: int, *, hold_bars: int = 16, st
                 cash_pnl -= efee
                 pos[s] = {"dir": dsig, "qty": qty, "entry": entry, "i": i, "entry_fee": efee, "funding": 0.0,
                           "stop": entry * (1 - stop_frac) if dsig > 0 else entry * (1 + stop_frac)}
+        if warm:
+            continue
         equity = equity0 + cash_pnl + _unreal(pos, ctxs, i)
         eq_curve.append(equity)
         t_curve.append(ctxs[syms[0]]["time"][i])
