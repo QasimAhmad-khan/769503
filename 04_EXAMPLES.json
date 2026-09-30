@@ -1,0 +1,343 @@
+{
+  "notice": "All examples are synthetic paper contract fixtures, not market observations, forecasts, calibrated probabilities or executable authorizations. The synthetic candidate has zero empirical support and must be rejected by semantic eligibility checks; mock Jev abstains. A risk precheck alone is insufficient. These records demonstrate data shape, not a complete chronological trade cycle.",
+  "canonical_hash_rule": "For this fixture, plan_sha256 is SHA-256 of UTF-8 JSON of the full candidate record with plan_sha256 removed, sorted object keys, no whitespace, ensure_ascii=false. Production must define stable canonicalization across supported languages.",
+  "records": [
+    {
+      "schema_version": "1.0.0",
+      "kind": "research_request",
+      "event_id": "evt_req_001",
+      "correlation_id": "cycle_fixture_001",
+      "producer": "analyzer",
+      "created_at": "2026-09-30T09:00:02Z",
+      "knowledge_cutoff": "2026-09-30T09:00:02Z",
+      "expires_at": "2026-09-30T09:00:30Z",
+      "environment": "paper",
+      "synthetic": true,
+      "request_id": "req_001",
+      "hypothesis_id": "funding_context_fixture",
+      "instrument": {
+        "venue": "SIMULATED",
+        "symbol": "BTCUSDT-PERP",
+        "product": "linear_perpetual",
+        "base_asset": "BTC",
+        "quote_asset": "USDT",
+        "settle_asset": "USDT",
+        "base_units_per_contract": "1",
+        "quantity_step_contracts": "0.001",
+        "price_tick": "0.1"
+      },
+      "horizon_seconds": 14400,
+      "features": [
+        {
+          "feature": "estimated_funding_rate",
+          "unit": "decimal_per_funding_interval",
+          "required": true,
+          "max_age_seconds": 60,
+          "approved_source_ids": [
+            "synthetic_market_fixture"
+          ]
+        }
+      ],
+      "round": 0,
+      "max_connector_calls": 1,
+      "max_response_bytes": 4096
+    },
+    {
+      "schema_version": "1.0.0",
+      "kind": "evidence",
+      "event_id": "evt_ev_001",
+      "correlation_id": "cycle_fixture_001",
+      "producer": "screener",
+      "created_at": "2026-09-30T09:00:02Z",
+      "knowledge_cutoff": "2026-09-30T09:00:02Z",
+      "expires_at": "2026-09-30T09:00:30Z",
+      "environment": "paper",
+      "synthetic": true,
+      "evidence_id": "ev_funding_001",
+      "feature": "estimated_funding_rate",
+      "instrument": {
+        "venue": "SIMULATED",
+        "symbol": "BTCUSDT-PERP",
+        "product": "linear_perpetual",
+        "base_asset": "BTC",
+        "quote_asset": "USDT",
+        "settle_asset": "USDT",
+        "base_units_per_contract": "1",
+        "quantity_step_contracts": "0.001",
+        "price_tick": "0.1"
+      },
+      "value": 0.0001,
+      "unit": "decimal_per_funding_interval",
+      "status": "available",
+      "reason": null,
+      "event_time": "2026-09-30T09:00:00Z",
+      "available_at": "2026-09-30T09:00:01Z",
+      "observed_at": "2026-09-30T09:00:01Z",
+      "source_id": "synthetic_market_fixture",
+      "source_record_id": "fixture:funding:001",
+      "revision": 0,
+      "content_sha256": "533fc945c164cf8424ade6dad52b75a17d0528274c2f3ec7843004f0a2ae993c",
+      "quality_flags": [
+        "SYNTHETIC_NOT_MARKET_DATA"
+      ],
+      "chain": null
+    },
+    {
+      "schema_version": "1.0.0",
+      "kind": "evidence",
+      "event_id": "evt_ev_missing_001",
+      "correlation_id": "cycle_fixture_001",
+      "producer": "screener",
+      "created_at": "2026-09-30T09:00:02Z",
+      "knowledge_cutoff": "2026-09-30T09:00:02Z",
+      "expires_at": "2026-09-30T09:00:30Z",
+      "environment": "paper",
+      "synthetic": true,
+      "evidence_id": "ev_chain_missing_001",
+      "feature": "attributed_exchange_netflow",
+      "instrument": {
+        "venue": "SIMULATED",
+        "symbol": "BTCUSDT-PERP",
+        "product": "linear_perpetual",
+        "base_asset": "BTC",
+        "quote_asset": "USDT",
+        "settle_asset": "USDT",
+        "base_units_per_contract": "1",
+        "quantity_step_contracts": "0.001",
+        "price_tick": "0.1"
+      },
+      "value": null,
+      "unit": "BTC_per_hour",
+      "status": "missing",
+      "reason": "No verified historical address-attribution data is configured.",
+      "event_time": "2026-09-30T09:00:00Z",
+      "available_at": "2026-09-30T09:00:01Z",
+      "observed_at": "2026-09-30T09:00:01Z",
+      "source_id": "synthetic_market_fixture",
+      "source_record_id": "fixture:missing:001",
+      "revision": 0,
+      "content_sha256": "272fbaa2bdadba37e2cac745e9dfe7ba5d82284377ce8674acc832208859ed55",
+      "quality_flags": [
+        "SYNTHETIC_NOT_MARKET_DATA",
+        "UNAVAILABLE_ATTRIBUTION"
+      ],
+      "chain": null
+    },
+    {
+      "schema_version": "1.0.0",
+      "kind": "evidence",
+      "event_id": "evt_ev_chain_001",
+      "correlation_id": "cycle_fixture_001",
+      "producer": "screener",
+      "created_at": "2026-09-30T09:00:02Z",
+      "knowledge_cutoff": "2026-09-30T09:00:02Z",
+      "expires_at": "2026-09-30T09:00:30Z",
+      "environment": "paper",
+      "synthetic": true,
+      "evidence_id": "ev_chain_001",
+      "feature": "finalized_transfer_value",
+      "instrument": {
+        "venue": "SIMULATED",
+        "symbol": "BTCUSDT-PERP",
+        "product": "linear_perpetual",
+        "base_asset": "BTC",
+        "quote_asset": "USDT",
+        "settle_asset": "USDT",
+        "base_units_per_contract": "1",
+        "quantity_step_contracts": "0.001",
+        "price_tick": "0.1"
+      },
+      "value": 12.34,
+      "unit": "BTC_per_hour",
+      "status": "available",
+      "reason": null,
+      "event_time": "2026-09-30T09:00:00Z",
+      "available_at": "2026-09-30T09:00:01Z",
+      "observed_at": "2026-09-30T09:00:01Z",
+      "source_id": "synthetic_chain_fixture",
+      "source_record_id": "fixture:chain:001",
+      "revision": 0,
+      "content_sha256": "69c272e5eff8c2ab0a7bd6417e945762c6152d9cf2799643535ba6bb498664a0",
+      "quality_flags": [
+        "SYNTHETIC_NOT_MARKET_DATA"
+      ],
+      "chain": {
+        "chain_id": "synthetic-bitcoin-chain",
+        "block_height": 900000,
+        "block_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "finality": "finalized"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "kind": "candidate_plan",
+      "event_id": "evt_plan_001",
+      "correlation_id": "cycle_fixture_001",
+      "producer": "quant_engine",
+      "created_at": "2026-09-30T09:00:02Z",
+      "knowledge_cutoff": "2026-09-30T09:00:02Z",
+      "expires_at": "2026-09-30T09:00:30Z",
+      "environment": "paper",
+      "synthetic": true,
+      "candidate_id": "cand_long_001",
+      "snapshot_id": "snap_001",
+      "account_state_version": "acct_001",
+      "policy_version": "paper_v1",
+      "instrument": {
+        "venue": "SIMULATED",
+        "symbol": "BTCUSDT-PERP",
+        "product": "linear_perpetual",
+        "base_asset": "BTC",
+        "quote_asset": "USDT",
+        "settle_asset": "USDT",
+        "base_units_per_contract": "1",
+        "quantity_step_contracts": "0.001",
+        "price_tick": "0.1"
+      },
+      "action": "OPEN_LONG",
+      "position_ref": null,
+      "position_side": "long",
+      "quantity_contracts": "0.01",
+      "price_min": "59995.0",
+      "price_max": "60005.0",
+      "stop_price": "59400.0",
+      "reduce_only": false,
+      "risk_increasing": true,
+      "evidence_ids": [
+        "ev_funding_001",
+        "ev_chain_001"
+      ],
+      "metrics": {
+        "utility_basis": "net_entry_ev",
+        "horizon_seconds": 14400,
+        "expected_utility_quote": "3.00",
+        "utility_lcb_quote": "0.80",
+        "estimated_fees_quote": "0.60",
+        "estimated_execution_cost_quote": "0.30",
+        "expected_funding_payment_quote": "0.06",
+        "stress_loss_quote": "10.00",
+        "forecast_artifact_id": "synthetic_forecast_not_a_fitted_model",
+        "uncertainty_artifact_id": "synthetic_uncertainty_not_estimated",
+        "effective_sample_count": 0
+      },
+      "risk_precheck_passed": true,
+      "plan_sha256": "92f25f7051983118287fe365b2adc82946626a2b0623f6f9539af9e92c661ede"
+    },
+    {
+      "schema_version": "1.0.0",
+      "kind": "decision_receipt",
+      "event_id": "evt_dec_001",
+      "correlation_id": "cycle_fixture_001",
+      "producer": "mock_jev_adapter",
+      "created_at": "2026-09-30T09:00:02Z",
+      "knowledge_cutoff": "2026-09-30T09:00:02Z",
+      "expires_at": "2026-09-30T09:00:30Z",
+      "environment": "paper",
+      "synthetic": true,
+      "decision_id": "dec_001",
+      "snapshot_id": "snap_001",
+      "candidate_ids": [
+        "cand_long_001"
+      ],
+      "selected_id": "ABSTAIN",
+      "provider": "mock_not_typesafe",
+      "model_revision": "fixture_v1",
+      "prompt_version": "selection_v1",
+      "request_sha256": "e373f2e5b45d60c0e482daa6b747732171f62f3272b356413f800f9906e21d32",
+      "raw_response_sha256": "8f2b1a665273e0e90a71bb8c0c57ff41025fbe09a2b950f431b979f23fcb3787",
+      "choice_probabilities": {
+        "ABSTAIN": 0.95,
+        "cand_long_001": 0.05
+      },
+      "provider_confidence": 0.9,
+      "score_semantics": "categorical_preference_not_win_probability",
+      "validation_status": "valid",
+      "reason_codes": [
+        "SYNTHETIC_ONLY",
+        "NO_EMPIRICAL_SAMPLE_SUPPORT"
+      ],
+      "latency_ms": 0,
+      "executable_authorization": false
+    },
+    {
+      "schema_version": "1.0.0",
+      "kind": "graph_slice",
+      "event_id": "evt_graph_001",
+      "correlation_id": "cycle_fixture_001",
+      "producer": "graph_projector",
+      "created_at": "2026-09-30T09:00:02Z",
+      "knowledge_cutoff": "2026-09-30T09:00:02Z",
+      "expires_at": "2026-09-30T09:00:30Z",
+      "environment": "paper",
+      "synthetic": true,
+      "snapshot_id": "snap_001",
+      "root_ids": [
+        "cand_long_001"
+      ],
+      "nodes": [
+        {
+          "id": "ev_funding_001",
+          "type": "evidence",
+          "record_ref": "evidence:ev_funding_001",
+          "available_at": "2026-09-30T09:00:01Z",
+          "summary": "Synthetic funding input; no real observation."
+        },
+        {
+          "id": "ev_chain_001",
+          "type": "evidence",
+          "record_ref": "evidence:ev_chain_001",
+          "available_at": "2026-09-30T09:00:01Z",
+          "summary": "Synthetic finalized chain input; value does not establish selling or exchange flow."
+        },
+        {
+          "id": "cand_long_001",
+          "type": "candidate",
+          "record_ref": "candidate:cand_long_001",
+          "available_at": "2026-09-30T09:00:02Z",
+          "summary": "Synthetic contract fixture; not eligible for execution."
+        },
+        {
+          "id": "dec_001",
+          "type": "decision",
+          "record_ref": "decision:dec_001",
+          "available_at": "2026-09-30T09:00:02Z",
+          "summary": "Mock decision abstains due to absent empirical support."
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge_001",
+          "from": "cand_long_001",
+          "to": "ev_funding_001",
+          "type": "derived_from",
+          "available_at": "2026-09-30T09:00:02Z",
+          "evidence_ids": [
+            "ev_funding_001"
+          ]
+        },
+        {
+          "id": "edge_chain",
+          "from": "cand_long_001",
+          "to": "ev_chain_001",
+          "type": "derived_from",
+          "available_at": "2026-09-30T09:00:02Z",
+          "evidence_ids": [
+            "ev_chain_001"
+          ]
+        },
+        {
+          "id": "edge_002",
+          "from": "dec_001",
+          "to": "cand_long_001",
+          "type": "about",
+          "available_at": "2026-09-30T09:00:02Z",
+          "evidence_ids": [
+            "ev_funding_001"
+          ]
+        }
+      ],
+      "truncated": false,
+      "missing_required_ids": []
+    }
+  ]
+}
