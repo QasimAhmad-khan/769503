@@ -1,0 +1,147 @@
+{
+  "hardware": {
+    "python": "3.11.15",
+    "platform": "Linux-6.18.44-fc-v50-x86_64-with-glibc2.39",
+    "cpus": 4,
+    "gpu": "none detected",
+    "mem_total_kib": 16480972
+  },
+  "wall_seconds": 22.5,
+  "passed": 19,
+  "total": 19,
+  "results": [
+    {
+      "scenario": "baseline",
+      "injected": "none",
+      "expected": "one authorized entry",
+      "observed": "1 entry intents",
+      "passed": true
+    },
+    {
+      "scenario": "jev_timeout",
+      "injected": "Jev transport mode=timeout",
+      "expected": "no entry intent; receipt ABSTAIN; NO_NEW_RISK lock",
+      "observed": "entries=0 receipt_status=['timeout'] locks=['jev_health']",
+      "passed": true
+    },
+    {
+      "scenario": "jev_unavailable",
+      "injected": "Jev transport mode=unavailable",
+      "expected": "no entry intent; receipt ABSTAIN; NO_NEW_RISK lock",
+      "observed": "entries=0 receipt_status=['unavailable'] locks=['jev_health']",
+      "passed": true
+    },
+    {
+      "scenario": "jev_malformed",
+      "injected": "Jev transport mode=malformed",
+      "expected": "no entry intent; receipt ABSTAIN; NO_NEW_RISK lock",
+      "observed": "entries=0 receipt_status=['invalid'] locks=['jev_health']",
+      "passed": true
+    },
+    {
+      "scenario": "jev_bad_label",
+      "injected": "Jev transport mode=bad_label",
+      "expected": "no entry intent; receipt ABSTAIN; NO_NEW_RISK lock",
+      "observed": "entries=0 receipt_status=['invalid'] locks=['jev_health']",
+      "passed": true
+    },
+    {
+      "scenario": "jev_unnormalized",
+      "injected": "Jev transport mode=unnormalized",
+      "expected": "no entry intent; receipt ABSTAIN; NO_NEW_RISK lock",
+      "observed": "entries=0 receipt_status=['invalid'] locks=['jev_health']",
+      "passed": true
+    },
+    {
+      "scenario": "jev_nan",
+      "injected": "Jev transport mode=nan",
+      "expected": "no entry intent; receipt ABSTAIN; NO_NEW_RISK lock",
+      "observed": "entries=0 receipt_status=['invalid'] locks=['jev_health']",
+      "passed": true
+    },
+    {
+      "scenario": "phi_malformed",
+      "injected": "Phi backend mode=malformed",
+      "expected": "no entry intent; cycle blocked/abstained",
+      "observed": "entries=0 blocked_cycles=6 locks=['phi_health']",
+      "passed": true
+    },
+    {
+      "scenario": "phi_timeout",
+      "injected": "Phi backend mode=timeout",
+      "expected": "no entry intent; cycle blocked/abstained",
+      "observed": "entries=0 blocked_cycles=6 locks=['phi_health']",
+      "passed": true
+    },
+    {
+      "scenario": "phi_oom",
+      "injected": "Phi backend mode=oom",
+      "expected": "no entry intent; cycle blocked/abstained",
+      "observed": "entries=0 blocked_cycles=6 locks=['phi_health']",
+      "passed": true
+    },
+    {
+      "scenario": "phi_schema_violation",
+      "injected": "Phi backend mode=schema_violation",
+      "expected": "no entry intent; cycle blocked/abstained",
+      "observed": "entries=0 blocked_cycles=6 locks=['phi_health']",
+      "passed": true
+    },
+    {
+      "scenario": "phi_injected",
+      "injected": "Phi backend mode=injected",
+      "expected": "no entry intent; cycle blocked/abstained",
+      "observed": "entries=0 blocked_cycles=6 locks=[]",
+      "passed": true
+    },
+    {
+      "scenario": "phi_oom_after_entry",
+      "injected": "Phi OOM while a position is open",
+      "expected": "protective stop placed and position exited by deterministic rules without Phi",
+      "observed": "protective_actions=1 flat_after_5h=True new_entries=0",
+      "passed": true
+    },
+    {
+      "scenario": "audit_persistence_failure",
+      "injected": "3 failed audit writes at the decision bar",
+      "expected": "no entry; NO_NEW_RISK(audit_failure)",
+      "observed": "entries=0 locks=['audit_failure']",
+      "passed": true
+    },
+    {
+      "scenario": "ack_loss_restart",
+      "injected": "ack dropped after venue accepted the entry; worker restart",
+      "expected": "one venue order only; intent reconciled; recovery completes; stale worker fenced",
+      "observed": "unknown_before_restart=1 venue_entry_orders=1 intent_status=filled recoveries=2 stale_worker_fenced=True",
+      "passed": true
+    },
+    {
+      "scenario": "duplicate_fill_delivery",
+      "injected": "every fill batch re-delivers its first fill",
+      "expected": "fills deduplicated by venue fill ID; local position equals venue",
+      "observed": "venue_fills=2 ledger_fills=2 discrepancies=[]",
+      "passed": true
+    },
+    {
+      "scenario": "missing_required_evidence",
+      "injected": "market-context connector removed",
+      "expected": "abstain with REQUIRED_EVIDENCE_MISSING; never zero-filled",
+      "observed": "entries=0 missing_cycles=6",
+      "passed": true
+    },
+    {
+      "scenario": "operator_halt",
+      "injected": "operator kill switch before the entry bar",
+      "expected": "no entries; lock not clearable without operator",
+      "observed": "entries=0 state=HALTED non_operator_clear=False",
+      "passed": true
+    },
+    {
+      "scenario": "alternate_entry_routes",
+      "injected": "legacy/manual/grid routes and an LLM-fallback provider",
+      "expected": "only autonomous_cycle with the configured provider passes",
+      "observed": "routes={'autonomous_cycle': True, 'legacy_ai_filter': False, 'manual_signal': False, 'grid_strategy': False} llm_fallback_allowed=False",
+      "passed": true
+    }
+  ]
+}

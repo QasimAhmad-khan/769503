@@ -1,0 +1,1228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:quant-crypto:starter-contracts:1.0.0",
+  "title": "QuantDinger/Phi/Jev paper starter contracts",
+  "description": "Starter boundary contracts, paper-only. Cross-record semantics, authorization and full runtime payloads must be implemented per 01_BUILD_SPEC.md. No schema-valid record is an executable order.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/research_request"
+    },
+    {
+      "$ref": "#/$defs/evidence"
+    },
+    {
+      "$ref": "#/$defs/candidate_plan"
+    },
+    {
+      "$ref": "#/$defs/decision_receipt"
+    },
+    {
+      "$ref": "#/$defs/graph_slice"
+    }
+  ],
+  "$defs": {
+    "instrument": {
+      "type": "object",
+      "properties": {
+        "venue": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "product": {
+          "const": "linear_perpetual"
+        },
+        "base_asset": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "quote_asset": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "settle_asset": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "base_units_per_contract": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+          "maxLength": 48
+        },
+        "quantity_step_contracts": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+          "maxLength": 48
+        },
+        "price_tick": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+          "maxLength": 48
+        }
+      },
+      "required": [
+        "venue",
+        "symbol",
+        "product",
+        "base_asset",
+        "quote_asset",
+        "settle_asset",
+        "base_units_per_contract",
+        "quantity_step_contracts",
+        "price_tick"
+      ],
+      "additionalProperties": false
+    },
+    "research_request": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "correlation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "producer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "knowledge_cutoff": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "environment": {
+          "const": "paper"
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "research_request"
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "hypothesis_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "instrument": {
+          "$ref": "#/$defs/instrument"
+        },
+        "horizon_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "feature": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "unit": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "max_age_seconds": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "approved_source_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "minItems": 1,
+                "maxItems": 8
+              }
+            },
+            "required": [
+              "feature",
+              "unit",
+              "required",
+              "max_age_seconds",
+              "approved_source_ids"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "round": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_connector_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "max_response_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "correlation_id",
+        "producer",
+        "created_at",
+        "knowledge_cutoff",
+        "expires_at",
+        "environment",
+        "synthetic",
+        "kind",
+        "request_id",
+        "hypothesis_id",
+        "instrument",
+        "horizon_seconds",
+        "features",
+        "round",
+        "max_connector_calls",
+        "max_response_bytes"
+      ],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "correlation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "producer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "knowledge_cutoff": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "environment": {
+          "const": "paper"
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "evidence"
+        },
+        "evidence_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "feature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "instrument": {
+          "$ref": "#/$defs/instrument"
+        },
+        "value": {
+          "type": [
+            "number",
+            "string",
+            "boolean",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "available",
+            "missing",
+            "stale",
+            "provisional",
+            "invalidated"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event_time": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "available_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_record_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "quality_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "maxItems": 12
+        },
+        "chain": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "chain_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "block_height": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "block_hash": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "finality": {
+                  "type": "string",
+                  "enum": [
+                    "finalized",
+                    "provisional",
+                    "orphaned"
+                  ]
+                }
+              },
+              "required": [
+                "chain_id",
+                "block_height",
+                "block_hash",
+                "finality"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "correlation_id",
+        "producer",
+        "created_at",
+        "knowledge_cutoff",
+        "expires_at",
+        "environment",
+        "synthetic",
+        "kind",
+        "evidence_id",
+        "feature",
+        "instrument",
+        "value",
+        "unit",
+        "status",
+        "reason",
+        "event_time",
+        "available_at",
+        "observed_at",
+        "source_id",
+        "source_record_id",
+        "revision",
+        "content_sha256",
+        "quality_flags",
+        "chain"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "available"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "missing",
+                  "invalidated"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            }
+          }
+        }
+      ]
+    },
+    "candidate_plan": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "correlation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "producer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "knowledge_cutoff": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "environment": {
+          "const": "paper"
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "candidate_plan"
+        },
+        "candidate_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "plan_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "account_state_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "instrument": {
+          "$ref": "#/$defs/instrument"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "OPEN_LONG",
+            "OPEN_SHORT",
+            "REDUCE",
+            "CLOSE"
+          ]
+        },
+        "position_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "position_side": {
+          "type": "string",
+          "enum": [
+            "long",
+            "short"
+          ]
+        },
+        "quantity_contracts": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+          "maxLength": 48
+        },
+        "price_min": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+          "maxLength": 48
+        },
+        "price_max": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+          "maxLength": 48
+        },
+        "stop_price": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+              "maxLength": 48
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reduce_only": {
+          "type": "boolean"
+        },
+        "risk_increasing": {
+          "type": "boolean"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "utility_basis": {
+              "type": "string",
+              "enum": [
+                "net_entry_ev",
+                "incremental_vs_hold"
+              ]
+            },
+            "horizon_seconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "expected_utility_quote": {
+              "type": "string",
+              "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+              "maxLength": 48
+            },
+            "utility_lcb_quote": {
+              "type": "string",
+              "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+              "maxLength": 48
+            },
+            "estimated_fees_quote": {
+              "type": "string",
+              "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+              "maxLength": 48
+            },
+            "estimated_execution_cost_quote": {
+              "type": "string",
+              "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+              "maxLength": 48
+            },
+            "expected_funding_payment_quote": {
+              "type": "string",
+              "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+              "maxLength": 48
+            },
+            "stress_loss_quote": {
+              "type": "string",
+              "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+              "maxLength": 48
+            },
+            "forecast_artifact_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "uncertainty_artifact_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "effective_sample_count": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "utility_basis",
+            "horizon_seconds",
+            "expected_utility_quote",
+            "utility_lcb_quote",
+            "estimated_fees_quote",
+            "estimated_execution_cost_quote",
+            "expected_funding_payment_quote",
+            "stress_loss_quote",
+            "forecast_artifact_id",
+            "uncertainty_artifact_id",
+            "effective_sample_count"
+          ],
+          "additionalProperties": false
+        },
+        "risk_precheck_passed": {
+          "const": true
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "correlation_id",
+        "producer",
+        "created_at",
+        "knowledge_cutoff",
+        "expires_at",
+        "environment",
+        "synthetic",
+        "kind",
+        "candidate_id",
+        "plan_sha256",
+        "snapshot_id",
+        "account_state_version",
+        "policy_version",
+        "instrument",
+        "action",
+        "position_ref",
+        "position_side",
+        "quantity_contracts",
+        "price_min",
+        "price_max",
+        "stop_price",
+        "reduce_only",
+        "risk_increasing",
+        "evidence_ids",
+        "metrics",
+        "risk_precheck_passed"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "OPEN_LONG",
+                  "OPEN_SHORT"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "risk_increasing": {
+                "const": true
+              },
+              "reduce_only": {
+                "const": false
+              },
+              "position_ref": {
+                "type": "null"
+              },
+              "stop_price": {
+                "type": "string",
+                "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$",
+                "maxLength": 48
+              },
+              "metrics": {
+                "properties": {
+                  "utility_basis": {
+                    "const": "net_entry_ev"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "REDUCE",
+                  "CLOSE"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "risk_increasing": {
+                "const": false
+              },
+              "reduce_only": {
+                "const": true
+              },
+              "position_ref": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "metrics": {
+                "properties": {
+                  "utility_basis": {
+                    "const": "incremental_vs_hold"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "OPEN_LONG"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "position_side": {
+                "const": "long"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "OPEN_SHORT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "position_side": {
+                "const": "short"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "decision_receipt": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "correlation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "producer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "knowledge_cutoff": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "environment": {
+          "const": "paper"
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "decision_receipt"
+        },
+        "decision_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "candidate_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 0,
+          "maxItems": 4
+        },
+        "selected_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "model_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "prompt_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "request_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "raw_response_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "choice_probabilities": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 5,
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "provider_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "score_semantics": {
+          "const": "categorical_preference_not_win_probability"
+        },
+        "validation_status": {
+          "type": "string",
+          "enum": [
+            "valid",
+            "invalid",
+            "timeout",
+            "unavailable"
+          ]
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executable_authorization": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "correlation_id",
+        "producer",
+        "created_at",
+        "knowledge_cutoff",
+        "expires_at",
+        "environment",
+        "synthetic",
+        "kind",
+        "decision_id",
+        "snapshot_id",
+        "candidate_ids",
+        "selected_id",
+        "provider",
+        "model_revision",
+        "prompt_version",
+        "request_sha256",
+        "raw_response_sha256",
+        "choice_probabilities",
+        "provider_confidence",
+        "score_semantics",
+        "validation_status",
+        "reason_codes",
+        "latency_ms",
+        "executable_authorization"
+      ],
+      "additionalProperties": false
+    },
+    "graph_slice": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "correlation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "producer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "knowledge_cutoff": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 35
+        },
+        "environment": {
+          "const": "paper"
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "graph_slice"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "root_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "asset",
+                  "instrument",
+                  "evidence",
+                  "feature",
+                  "hypothesis",
+                  "analysis",
+                  "candidate",
+                  "decision",
+                  "position",
+                  "order",
+                  "risk_event",
+                  "outcome",
+                  "policy"
+                ]
+              },
+              "record_ref": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "available_at": {
+                "type": "string",
+                "format": "date-time",
+                "maxLength": 35
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "record_ref",
+              "available_at",
+              "summary"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "from": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "about",
+                  "derived_from",
+                  "supports",
+                  "contradicts",
+                  "supersedes",
+                  "invalidates",
+                  "selected",
+                  "authorized_by",
+                  "executed_as",
+                  "resulted_in",
+                  "exposes_to"
+                ]
+              },
+              "available_at": {
+                "type": "string",
+                "format": "date-time",
+                "maxLength": 35
+              },
+              "evidence_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "minItems": 0,
+                "maxItems": 32
+              }
+            },
+            "required": [
+              "id",
+              "from",
+              "to",
+              "type",
+              "available_at",
+              "evidence_ids"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 64
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "missing_required_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 0,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "correlation_id",
+        "producer",
+        "created_at",
+        "knowledge_cutoff",
+        "expires_at",
+        "environment",
+        "synthetic",
+        "kind",
+        "snapshot_id",
+        "root_ids",
+        "nodes",
+        "edges",
+        "truncated",
+        "missing_required_ids"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

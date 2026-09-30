@@ -1,0 +1,622 @@
+{
+  "equity": "9928.364944491639919544226739901553",
+  "wallet": "9928.364944491639919544226739901553",
+  "risk_state": "NORMAL",
+  "locks": {},
+  "cycles": 2688,
+  "cycle_status_counts": {
+    "abstain": 2683,
+    "authorized": 5
+  },
+  "fills": 10,
+  "fees_paid": "2.7962376",
+  "funding_paid": "-0.3649820916399195442267399015525538",
+  "outcomes": 5,
+  "risk_latency": {
+    "count": 20160,
+    "p50_ms": 1.0212,
+    "p95_ms": 1.3649,
+    "p99_ms": 1.5997,
+    "max_ms": 29.0876,
+    "target_p99_ms": 100
+  },
+  "phi": {
+    "backend": "fake_phi_rules_v1",
+    "revision": "fake",
+    "prompt_version": "roles_v1",
+    "calls": 6472,
+    "schema_failures": 0,
+    "timeouts": 0,
+    "oom": 0,
+    "overload_rejects": 0,
+    "context_rejects": 0,
+    "latency_p50_ms": 0.018,
+    "latency_p95_ms": 0.037,
+    "latency_p99_ms": 0.062,
+    "max_input_tokens": 1490
+  },
+  "jev": {
+    "calls": 5,
+    "valid": 5,
+    "invalid": 0,
+    "timeout": 0,
+    "unavailable": 0
+  },
+  "graph": {
+    "nodes": 6417,
+    "edges": 46
+  },
+  "wall_seconds": 120.6,
+  "simulated_days": 14.0,
+  "hardware": {
+    "python": "3.11.15",
+    "platform": "Linux-6.18.44-fc-v50-x86_64-with-glibc2.39",
+    "cpus": 4,
+    "gpu": "none detected",
+    "mem_total_kib": 16480972
+  },
+  "rss_max_mib": 119.7,
+  "samples": [
+    {
+      "sim_time": "2026-01-15T06:00:00+00:00",
+      "rss_max_mib": 95.1,
+      "db_bytes": 286720,
+      "graph": {
+        "nodes": 115,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-15T12:00:00+00:00",
+      "rss_max_mib": 95.6,
+      "db_bytes": 430080,
+      "graph": {
+        "nodes": 197,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-15T18:00:00+00:00",
+      "rss_max_mib": 96.4,
+      "db_bytes": 659456,
+      "graph": {
+        "nodes": 353,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-16T00:00:00+00:00",
+      "rss_max_mib": 97.2,
+      "db_bytes": 892928,
+      "graph": {
+        "nodes": 509,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-16T06:00:00+00:00",
+      "rss_max_mib": 97.8,
+      "db_bytes": 1097728,
+      "graph": {
+        "nodes": 643,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-16T12:00:00+00:00",
+      "rss_max_mib": 98.1,
+      "db_bytes": 1175552,
+      "graph": {
+        "nodes": 666,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-16T18:00:00+00:00",
+      "rss_max_mib": 98.7,
+      "db_bytes": 1339392,
+      "graph": {
+        "nodes": 764,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-17T00:00:00+00:00",
+      "rss_max_mib": 99.6,
+      "db_bytes": 1572864,
+      "graph": {
+        "nodes": 920,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-17T06:00:00+00:00",
+      "rss_max_mib": 100.3,
+      "db_bytes": 1798144,
+      "graph": {
+        "nodes": 1072,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-17T12:00:00+00:00",
+      "rss_max_mib": 100.7,
+      "db_bytes": 1945600,
+      "graph": {
+        "nodes": 1158,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-17T18:00:00+00:00",
+      "rss_max_mib": 100.9,
+      "db_bytes": 2117632,
+      "graph": {
+        "nodes": 1262,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-18T00:00:00+00:00",
+      "rss_max_mib": 101.6,
+      "db_bytes": 2293760,
+      "graph": {
+        "nodes": 1376,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-18T06:00:00+00:00",
+      "rss_max_mib": 102.1,
+      "db_bytes": 2494464,
+      "graph": {
+        "nodes": 1505,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-18T12:00:00+00:00",
+      "rss_max_mib": 102.3,
+      "db_bytes": 2691072,
+      "graph": {
+        "nodes": 1619,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-18T18:00:00+00:00",
+      "rss_max_mib": 102.8,
+      "db_bytes": 2809856,
+      "graph": {
+        "nodes": 1684,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-19T00:00:00+00:00",
+      "rss_max_mib": 103.2,
+      "db_bytes": 2945024,
+      "graph": {
+        "nodes": 1753,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-19T06:00:00+00:00",
+      "rss_max_mib": 103.2,
+      "db_bytes": 3072000,
+      "graph": {
+        "nodes": 1824,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-19T12:00:00+00:00",
+      "rss_max_mib": 103.8,
+      "db_bytes": 3284992,
+      "graph": {
+        "nodes": 1957,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-19T18:00:00+00:00",
+      "rss_max_mib": 104.2,
+      "db_bytes": 3444736,
+      "graph": {
+        "nodes": 2056,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-20T00:00:00+00:00",
+      "rss_max_mib": 104.7,
+      "db_bytes": 3661824,
+      "graph": {
+        "nodes": 2197,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-20T06:00:00+00:00",
+      "rss_max_mib": 105.2,
+      "db_bytes": 3887104,
+      "graph": {
+        "nodes": 2353,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-20T12:00:00+00:00",
+      "rss_max_mib": 105.8,
+      "db_bytes": 4116480,
+      "graph": {
+        "nodes": 2509,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-20T18:00:00+00:00",
+      "rss_max_mib": 105.9,
+      "db_bytes": 4222976,
+      "graph": {
+        "nodes": 2557,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-21T00:00:00+00:00",
+      "rss_max_mib": 106.3,
+      "db_bytes": 4435968,
+      "graph": {
+        "nodes": 2692,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-21T06:00:00+00:00",
+      "rss_max_mib": 106.8,
+      "db_bytes": 4628480,
+      "graph": {
+        "nodes": 2815,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-21T12:00:00+00:00",
+      "rss_max_mib": 107.3,
+      "db_bytes": 4866048,
+      "graph": {
+        "nodes": 2971,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-21T18:00:00+00:00",
+      "rss_max_mib": 107.8,
+      "db_bytes": 5050368,
+      "graph": {
+        "nodes": 3091,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-22T00:00:00+00:00",
+      "rss_max_mib": 108.1,
+      "db_bytes": 5152768,
+      "graph": {
+        "nodes": 3141,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-22T06:00:00+00:00",
+      "rss_max_mib": 108.1,
+      "db_bytes": 5210112,
+      "graph": {
+        "nodes": 3145,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-22T12:00:00+00:00",
+      "rss_max_mib": 108.6,
+      "db_bytes": 5431296,
+      "graph": {
+        "nodes": 3295,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-22T18:00:00+00:00",
+      "rss_max_mib": 109.2,
+      "db_bytes": 5660672,
+      "graph": {
+        "nodes": 3451,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-23T00:00:00+00:00",
+      "rss_max_mib": 109.6,
+      "db_bytes": 5865472,
+      "graph": {
+        "nodes": 3581,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-23T06:00:00+00:00",
+      "rss_max_mib": 109.9,
+      "db_bytes": 6066176,
+      "graph": {
+        "nodes": 3716,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-23T12:00:00+00:00",
+      "rss_max_mib": 110.6,
+      "db_bytes": 6303744,
+      "graph": {
+        "nodes": 3872,
+        "edges": 0
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-23T18:00:00+00:00",
+      "rss_max_mib": 111.1,
+      "db_bytes": 6451200,
+      "graph": {
+        "nodes": 4027,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-24T00:00:00+00:00",
+      "rss_max_mib": 111.3,
+      "db_bytes": 6549504,
+      "graph": {
+        "nodes": 4085,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-24T06:00:00+00:00",
+      "rss_max_mib": 111.7,
+      "db_bytes": 6729728,
+      "graph": {
+        "nodes": 4196,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-24T12:00:00+00:00",
+      "rss_max_mib": 112.2,
+      "db_bytes": 6955008,
+      "graph": {
+        "nodes": 4352,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-24T18:00:00+00:00",
+      "rss_max_mib": 112.6,
+      "db_bytes": 7118848,
+      "graph": {
+        "nodes": 4440,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-25T00:00:00+00:00",
+      "rss_max_mib": 113.1,
+      "db_bytes": 7290880,
+      "graph": {
+        "nodes": 4541,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-25T06:00:00+00:00",
+      "rss_max_mib": 113.3,
+      "db_bytes": 7507968,
+      "graph": {
+        "nodes": 4684,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-25T12:00:00+00:00",
+      "rss_max_mib": 113.8,
+      "db_bytes": 7720960,
+      "graph": {
+        "nodes": 4832,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-25T18:00:00+00:00",
+      "rss_max_mib": 114.4,
+      "db_bytes": 7917568,
+      "graph": {
+        "nodes": 4962,
+        "edges": 30
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-26T00:00:00+00:00",
+      "rss_max_mib": 114.7,
+      "db_bytes": 8081408,
+      "graph": {
+        "nodes": 5125,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-26T06:00:00+00:00",
+      "rss_max_mib": 115.3,
+      "db_bytes": 8286208,
+      "graph": {
+        "nodes": 5267,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-26T12:00:00+00:00",
+      "rss_max_mib": 115.8,
+      "db_bytes": 8523776,
+      "graph": {
+        "nodes": 5423,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-26T18:00:00+00:00",
+      "rss_max_mib": 116.2,
+      "db_bytes": 8658944,
+      "graph": {
+        "nodes": 5491,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-27T00:00:00+00:00",
+      "rss_max_mib": 116.8,
+      "db_bytes": 8859648,
+      "graph": {
+        "nodes": 5628,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-27T06:00:00+00:00",
+      "rss_max_mib": 116.9,
+      "db_bytes": 8998912,
+      "graph": {
+        "nodes": 5700,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-27T12:00:00+00:00",
+      "rss_max_mib": 117.3,
+      "db_bytes": 9121792,
+      "graph": {
+        "nodes": 5771,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-27T18:00:00+00:00",
+      "rss_max_mib": 117.8,
+      "db_bytes": 9342976,
+      "graph": {
+        "nodes": 5927,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-28T00:00:00+00:00",
+      "rss_max_mib": 118.1,
+      "db_bytes": 9531392,
+      "graph": {
+        "nodes": 6041,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-28T06:00:00+00:00",
+      "rss_max_mib": 118.6,
+      "db_bytes": 9711616,
+      "graph": {
+        "nodes": 6151,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-28T12:00:00+00:00",
+      "rss_max_mib": 118.7,
+      "db_bytes": 9801728,
+      "graph": {
+        "nodes": 6184,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-28T18:00:00+00:00",
+      "rss_max_mib": 119.1,
+      "db_bytes": 9953280,
+      "graph": {
+        "nodes": 6261,
+        "edges": 46
+      },
+      "phi_queue": 0
+    },
+    {
+      "sim_time": "2026-01-29T00:00:00+00:00",
+      "rss_max_mib": 119.6,
+      "db_bytes": 10182656,
+      "graph": {
+        "nodes": 6417,
+        "edges": 46
+      },
+      "phi_queue": 0
+    }
+  ],
+  "note": "Simulated-time soak on SYNTHETIC data with FAKE models; the spec's 24h engineering soak must run in wall-clock time against the real Phi/Open-Jev services."
+}

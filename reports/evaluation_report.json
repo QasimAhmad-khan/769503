@@ -1,0 +1,296 @@
+{
+  "notice": "Harness demonstration on SYNTHETIC data with FAKE model adapters. No alpha, model-quality or live-readiness claim is made or supported. Promotion is blocked.",
+  "manifest": {
+    "manifest_id": null,
+    "data": "synthetic_market(seed=7) \u2014 SYNTHETIC, not market observations",
+    "models": "FAKE Phi rules + FAKE Jev (max utility LCB); real Phi/Open-Jev not run",
+    "window": [
+      "2026-01-09T00:00:00Z",
+      "2026-01-31T00:00:00Z"
+    ],
+    "trial_registry": {
+      "policies": [
+        "C_deterministic",
+        "D_fake_phi_screen_deterministic_choice",
+        "E_fake_phi_plus_fake_jev",
+        "F_E_without_onchain",
+        "A_cash",
+        "B_benchmark"
+      ],
+      "parameter_sets_per_policy": 1,
+      "parameter_search": "none (config fixed a priori)"
+    },
+    "net_ev_hurdle_quote": null,
+    "minimum_effective_sample_count": null,
+    "confidence_method": "moving-block bootstrap (block=3 days, 2000 reps, 90%) on paired daily PnL",
+    "promotion_blockers": [
+      "promotion.research_manifest_id unresolved",
+      "promotion.minimum_effective_sample_count unresolved",
+      "promotion.net_ev_hurdle_quote unresolved",
+      "promotion.paired_improvement_hurdle unresolved",
+      "promotion.required_confidence_method unresolved",
+      "promotion.prospective_evaluation_complete is false",
+      "resources.host_ram_budget_gib unmeasured",
+      "resources.gpu_vram_budget_gib unmeasured",
+      "resources.disk_quota_gib unmeasured",
+      "fake model adapters configured (jev.transport / phi.backend)",
+      "jev.calibration_artifact_id missing (live requires locked calibration)",
+      "phi.model_revision unresolved (RESOLVE_AND_PIN)",
+      "phi.runtime unresolved (SELECT_AFTER_GPU_DISCOVERY)",
+      "phi.quantization unresolved (BENCHMARK_SUPPORTED_4BIT_AGAINST_REFERENCE)",
+      "venue margin rules not configured for a real venue",
+      "no real venue selected"
+    ]
+  },
+  "policies": {
+    "C_deterministic": {
+      "policy": "C_deterministic",
+      "config": {
+        "selector": "deterministic",
+        "use_phi": false,
+        "use_onchain": true
+      },
+      "days": 23,
+      "final_equity": 9917.5766,
+      "net_pnl": -82.4234,
+      "daily_pnl_mean": -3.5836,
+      "daily_pnl_sd": 10.7776,
+      "max_drawdown_quote": 87.027,
+      "trades": 7,
+      "win_fraction": 0.286,
+      "fees": "3.9994886",
+      "funding_paid": "-0.3019147583217602252406367397578962",
+      "turnover_quote": 7998.98,
+      "avg_gross_exposure_over_equity": 0.00244,
+      "cycles": 4224,
+      "abstain_fraction": 0.9983,
+      "phi_calls": 0,
+      "jev_calls": 0,
+      "wall_seconds": 43.1,
+      "risk_latency": {
+        "count": 31680,
+        "p50_ms": 0.0373,
+        "p95_ms": 0.0606,
+        "p99_ms": 0.0811,
+        "max_ms": 0.635,
+        "target_p99_ms": 100
+      }
+    },
+    "D_fake_phi_screen_deterministic_choice": {
+      "policy": "D_fake_phi_screen_deterministic_choice",
+      "config": {
+        "selector": "deterministic",
+        "use_phi": true,
+        "use_onchain": true
+      },
+      "days": 23,
+      "final_equity": 9917.5766,
+      "net_pnl": -82.4234,
+      "daily_pnl_mean": -3.5836,
+      "daily_pnl_sd": 10.7776,
+      "max_drawdown_quote": 87.027,
+      "trades": 7,
+      "win_fraction": 0.286,
+      "fees": "3.9994886",
+      "funding_paid": "-0.3019147583217602252406367397578962",
+      "turnover_quote": 7998.98,
+      "avg_gross_exposure_over_equity": 0.00244,
+      "cycles": 4224,
+      "abstain_fraction": 0.9983,
+      "phi_calls": 10122,
+      "jev_calls": 0,
+      "wall_seconds": 58.4,
+      "risk_latency": {
+        "count": 31680,
+        "p50_ms": 0.0384,
+        "p95_ms": 0.064,
+        "p99_ms": 0.0857,
+        "max_ms": 0.8355,
+        "target_p99_ms": 100
+      }
+    },
+    "E_fake_phi_plus_fake_jev": {
+      "policy": "E_fake_phi_plus_fake_jev",
+      "config": {
+        "selector": "jev",
+        "use_phi": true,
+        "use_onchain": true
+      },
+      "days": 23,
+      "final_equity": 9917.5766,
+      "net_pnl": -82.4234,
+      "daily_pnl_mean": -3.5836,
+      "daily_pnl_sd": 10.7776,
+      "max_drawdown_quote": 87.027,
+      "trades": 7,
+      "win_fraction": 0.286,
+      "fees": "3.9994886",
+      "funding_paid": "-0.3019147583217602252406367397578962",
+      "turnover_quote": 7998.98,
+      "avg_gross_exposure_over_equity": 0.00244,
+      "cycles": 4224,
+      "abstain_fraction": 0.9983,
+      "phi_calls": 10122,
+      "jev_calls": 7,
+      "wall_seconds": 58.7,
+      "risk_latency": {
+        "count": 31680,
+        "p50_ms": 0.0381,
+        "p95_ms": 0.0628,
+        "p99_ms": 0.0858,
+        "max_ms": 0.7252,
+        "target_p99_ms": 100
+      }
+    },
+    "F_E_without_onchain": {
+      "policy": "F_E_without_onchain",
+      "config": {
+        "selector": "jev",
+        "use_phi": true,
+        "use_onchain": false
+      },
+      "days": 23,
+      "final_equity": 9917.5766,
+      "net_pnl": -82.4234,
+      "daily_pnl_mean": -3.5836,
+      "daily_pnl_sd": 10.7776,
+      "max_drawdown_quote": 87.027,
+      "trades": 7,
+      "win_fraction": 0.286,
+      "fees": "3.9994886",
+      "funding_paid": "-0.3019147583217602252406367397578962",
+      "turnover_quote": 7998.98,
+      "avg_gross_exposure_over_equity": 0.00244,
+      "cycles": 4224,
+      "abstain_fraction": 0.9983,
+      "phi_calls": 10122,
+      "jev_calls": 7,
+      "wall_seconds": 60.5,
+      "risk_latency": {
+        "count": 31680,
+        "p50_ms": 0.0392,
+        "p95_ms": 0.0673,
+        "p99_ms": 0.0944,
+        "max_ms": 0.1975,
+        "target_p99_ms": 100
+      }
+    },
+    "A_cash": {
+      "policy": "A_cash",
+      "net_pnl": 0.0
+    },
+    "B_exposure_matched_static_long": {
+      "policy": "B_exposure_matched_static_long",
+      "net_pnl": 6.2414,
+      "avg_gross_exposure_over_equity": 0.00244
+    }
+  },
+  "paired_comparisons": [
+    {
+      "policy": "C_deterministic",
+      "baseline": "A_cash",
+      "days": 23,
+      "mean_daily_diff": -3.5836,
+      "total_diff": -82.4234,
+      "block_bootstrap_90ci_mean_daily_diff": [
+        -8.0351,
+        -0.4691
+      ],
+      "interpretation": "negative"
+    },
+    {
+      "policy": "C_deterministic",
+      "baseline": "B_exposure_matched_static_long",
+      "days": 23,
+      "mean_daily_diff": -3.855,
+      "total_diff": -88.6648,
+      "block_bootstrap_90ci_mean_daily_diff": [
+        -8.1698,
+        -0.8888
+      ],
+      "interpretation": "negative"
+    },
+    {
+      "policy": "D_fake_phi_screen_deterministic_choice",
+      "baseline": "C_deterministic",
+      "days": 23,
+      "mean_daily_diff": 0.0,
+      "total_diff": 0.0,
+      "block_bootstrap_90ci_mean_daily_diff": [
+        0.0,
+        0.0
+      ],
+      "interpretation": "inconclusive"
+    },
+    {
+      "policy": "E_fake_phi_plus_fake_jev",
+      "baseline": "D_fake_phi_screen_deterministic_choice",
+      "days": 23,
+      "mean_daily_diff": 0.0,
+      "total_diff": 0.0,
+      "block_bootstrap_90ci_mean_daily_diff": [
+        0.0,
+        0.0
+      ],
+      "interpretation": "inconclusive"
+    },
+    {
+      "policy": "E_fake_phi_plus_fake_jev",
+      "baseline": "F_E_without_onchain",
+      "days": 23,
+      "mean_daily_diff": 0.0,
+      "total_diff": 0.0,
+      "block_bootstrap_90ci_mean_daily_diff": [
+        0.0,
+        0.0
+      ],
+      "interpretation": "inconclusive"
+    }
+  ],
+  "chronological_folds": [
+    {
+      "fold": 0,
+      "from": "2026-01-09",
+      "to": "2026-01-15",
+      "C_deterministic": -10.788,
+      "D_fake_phi_screen_deterministic_choice": -10.788,
+      "E_fake_phi_plus_fake_jev": -10.788,
+      "F_E_without_onchain": -10.788,
+      "A_cash": 0.0,
+      "B_exposure_matched_static_long": 2.993
+    },
+    {
+      "fold": 1,
+      "from": "2026-01-16",
+      "to": "2026-01-22",
+      "C_deterministic": 0.0,
+      "D_fake_phi_screen_deterministic_choice": 0.0,
+      "E_fake_phi_plus_fake_jev": 0.0,
+      "F_E_without_onchain": 0.0,
+      "A_cash": 0.0,
+      "B_exposure_matched_static_long": 0.237
+    },
+    {
+      "fold": 2,
+      "from": "2026-01-23",
+      "to": "2026-01-29",
+      "C_deterministic": -71.635,
+      "D_fake_phi_screen_deterministic_choice": -71.635,
+      "E_fake_phi_plus_fake_jev": -71.635,
+      "F_E_without_onchain": -71.635,
+      "A_cash": 0.0,
+      "B_exposure_matched_static_long": 1.871
+    },
+    {
+      "fold": 3,
+      "from": "2026-01-30",
+      "to": "2026-01-31",
+      "C_deterministic": 0.0,
+      "D_fake_phi_screen_deterministic_choice": 0.0,
+      "E_fake_phi_plus_fake_jev": 0.0,
+      "F_E_without_onchain": 0.0,
+      "A_cash": 0.0,
+      "B_exposure_matched_static_long": 1.141
+    }
+  ]
+}
