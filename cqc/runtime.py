@@ -42,7 +42,7 @@ def make_phi_backend(cfg):
 
 
 def make_jev_transport(cfg):
-    if cfg["jev"]["provider"] in ("open_jev", "typesafe") and cfg.get("_use_real_jev"):
+    if cfg["jev"].get("transport", "fake") == "http":
         return OpenJevTransport(cfg["jev"]["api_base_url"], cfg["jev"]["timeout_seconds"])
     return FakeJevTransport()
 

@@ -1,0 +1,447 @@
+{
+  "notice": "SYNTHETIC market data and FAKE Phi/Jev adapters (labeled). Demonstrates mechanics and audit linkage only; it is not evidence of trading edge or model quality.",
+  "scenarios": {
+    "eligible_paper_trade": {
+      "correlation_id": "cycle_8d920a882f726ec1",
+      "snapshot_id": "snap_918cdb64006f63ee",
+      "research_request_id": "req_a77d0415fcd70e08",
+      "evidence_ids": [
+        "ev_f4e4d3e6996ab6ab",
+        "ev_6c466a243c3b18f6",
+        "ev_57aff170a0f8bb13",
+        "ev_932e05dbeed0eb8d"
+      ],
+      "candidates": [
+        {
+          "candidate_id": "cand_2b34ae20b10bf57c",
+          "action": "OPEN_LONG",
+          "qty": "10",
+          "stop": "72206.5",
+          "utility_lcb_quote": "0.03",
+          "effective_samples": 55,
+          "plan_sha256": "0a21d55ed3bce8ed78fafb0f8a9cbed86913ee9295320d3e8a5f11b0c493b02b"
+        },
+        {
+          "candidate_id": "cand_2f3f5ca8164eb1e6",
+          "action": "OPEN_LONG",
+          "qty": "5",
+          "stop": "72206.5",
+          "utility_lcb_quote": "0.01",
+          "effective_samples": 55,
+          "plan_sha256": "cdbbae5805f3fb3c7d5b58e369fcecc00d3213bd26e3bbdb15925ac76534e1ca"
+        }
+      ],
+      "decision": {
+        "decision_id": "dec_b5565a54bd1e3a9e",
+        "provider": "fake_jev_not_a_model",
+        "selected_id": "cand_2b34ae20b10bf57c",
+        "choice_probabilities": {
+          "ABSTAIN": 0.15,
+          "cand_2b34ae20b10bf57c": 0.7,
+          "cand_2f3f5ca8164eb1e6": 0.15
+        },
+        "score_semantics": "categorical_preference_not_win_probability"
+      },
+      "authorization_id": "auth_58490f946264823a",
+      "intent": {
+        "intent_id": "int_8c4894641c1c46a8",
+        "client_order_id": "cqc8f68387f3c766f382b52205d74c1d",
+        "status": "filled",
+        "qty": "10",
+        "filled_qty": "10",
+        "price_limit": "74513.3",
+        "stop_price": "72206.5"
+      },
+      "fills": [
+        {
+          "fill_id": "fill_76bb1dfb54943824",
+          "qty": "10",
+          "price": "74403.5",
+          "fee": "0.37201750",
+          "ts": "2026-01-23T12:47:00Z"
+        }
+      ],
+      "protective_actions": [
+        {
+          "intent_id": "prot_3276dab916fc34bd",
+          "qty": "10",
+          "reason": "protect_position",
+          "side": "sell",
+          "stop_price": "72206.5",
+          "symbol": "BTCUSDT",
+          "type": "stop_market"
+        },
+        {
+          "intent_id": "prot_44feeee9330c3d04",
+          "qty": "20",
+          "reason": "protect_position",
+          "side": "sell",
+          "stop_price": "2908.18",
+          "symbol": "ETHUSDT",
+          "type": "stop_market"
+        },
+        {
+          "intent_id": "prot_2c6c8a6c8bbaca36",
+          "qty": "20",
+          "reason": "protect_position",
+          "side": "sell",
+          "stop_price": "2800.83",
+          "symbol": "ETHUSDT",
+          "type": "stop_market"
+        },
+        {
+          "intent_id": "prot_1f0e05d445c1b252",
+          "qty": "20",
+          "reason": "max_holding_time",
+          "side": "sell",
+          "stop_price": null,
+          "symbol": "ETHUSDT",
+          "type": "market"
+        }
+      ],
+      "outcomes": [
+        {
+          "candidate_id": "cand_2b34ae20b10bf57c",
+          "closed": "2026-01-23T14:31:01Z",
+          "net_pnl_quote": "-23.4256885",
+          "opened": "2026-01-23T12:47:01Z",
+          "symbol": "BTCUSDT"
+        },
+        {
+          "candidate_id": "cand_6cc24dc440c731c7",
+          "closed": "2026-01-23T14:53:01Z",
+          "net_pnl_quote": "-23.600558",
+          "opened": "2026-01-23T13:02:01Z",
+          "symbol": "ETHUSDT"
+        },
+        {
+          "candidate_id": "cand_0f42ad369883d830",
+          "closed": "2026-01-23T19:04:01Z",
+          "net_pnl_quote": "1.80939282194076437913091007825922",
+          "opened": "2026-01-23T15:02:01Z",
+          "symbol": "ETHUSDT"
+        }
+      ]
+    },
+    "risk_reduction": {
+      "description": "Deterministic protective reductions/exits executed without any model call",
+      "market_reductions": [
+        {
+          "intent_id": "prot_1f0e05d445c1b252",
+          "qty": "20",
+          "reason": "max_holding_time",
+          "side": "sell",
+          "stop_price": null,
+          "symbol": "ETHUSDT",
+          "type": "market"
+        }
+      ],
+      "stop_exits": [
+        {
+          "fill_id": "fill_3adab716effcd595",
+          "symbol": "BTCUSDT",
+          "side": "sell",
+          "qty": "10",
+          "price": "72134.2"
+        },
+        {
+          "fill_id": "fill_56d48530a22e64fe",
+          "symbol": "ETHUSDT",
+          "side": "sell",
+          "qty": "20",
+          "price": "2905.27"
+        }
+      ],
+      "risk_events": [
+        {
+          "correlation_id": "risk",
+          "created_at": "2026-01-23T11:45:00Z",
+          "detail": "restart: reconcile before new entries",
+          "environment": "paper",
+          "event_id": "evt_risk_32c58eaec934b090",
+          "expires_at": "2026-01-24T11:45:00Z",
+          "from_state": "NORMAL",
+          "kind": "risk_event",
+          "knowledge_cutoff": "2026-01-23T11:45:00Z",
+          "producer": "risk_engine",
+          "schema_version": "1.0.0",
+          "synthetic": true,
+          "to_state": "RECOVERY",
+          "trigger": "startup_recovery"
+        },
+        {
+          "correlation_id": "risk",
+          "created_at": "2026-01-23T11:45:00Z",
+          "detail": "conditions cleared",
+          "environment": "paper",
+          "event_id": "evt_risk_ebe43f1de41c68c5",
+          "expires_at": "2026-01-24T11:45:00Z",
+          "from_state": "RECOVERY",
+          "kind": "risk_event",
+          "knowledge_cutoff": "2026-01-23T11:45:00Z",
+          "producer": "risk_engine",
+          "schema_version": "1.0.0",
+          "synthetic": true,
+          "to_state": "NORMAL",
+          "trigger": "clear:startup_recovery"
+        }
+      ]
+    },
+    "abstention": {
+      "deterministic_abstentions_in_window": 61,
+      "example_reasons": [
+        "LCB_BELOW_HURDLE_0.5",
+        "LCB_BELOW_HURDLE_1.0",
+        "NO_ELIGIBLE_CANDIDATE",
+        "NO_REGISTERED_SIGNAL"
+      ],
+      "jev_abstain_receipt": {
+        "decision_id": "dec_0a9498ed0bee0beb",
+        "candidate_ids": [
+          "cand_2b34ae20b10bf57c",
+          "cand_2f3f5ca8164eb1e6"
+        ],
+        "selected_id": "ABSTAIN",
+        "validation_status": "valid",
+        "reason_codes": [
+          "MODEL_ABSTAINED"
+        ]
+      },
+      "entries_after_jev_abstain": 0
+    },
+    "partial_fill": {
+      "intent_id": "int_97697afc92e5a3cc",
+      "ordered_qty": "10",
+      "filled_qty": "2",
+      "status": "canceled",
+      "reservation": {
+        "reservation_id": "res_18eadf1f3370351d",
+        "intent_id": "int_97697afc92e5a3cc",
+        "symbol": "BTCUSDT",
+        "stop_risk_per_contract": "2.45582660",
+        "notional_per_contract": "74.5133",
+        "qty_reserved": "0",
+        "status": "released"
+      },
+      "fills": [
+        {
+          "fill_id": "fill_76bb1dfb54943824",
+          "qty": "1",
+          "price": "74403.5",
+          "ts": "2026-01-23T12:47:00Z"
+        },
+        {
+          "fill_id": "fill_d6e1f9405faab3de",
+          "qty": "1",
+          "price": "74374.0",
+          "ts": "2026-01-23T12:48:00Z"
+        }
+      ],
+      "terminal_events": [
+        {
+          "intent_id": "int_97697afc92e5a3cc",
+          "reason": "venue_confirmed",
+          "status": "canceled"
+        }
+      ]
+    },
+    "restart_recovery": {
+      "scenario": "ack_loss_restart",
+      "injected": "ack dropped after venue accepted the entry; worker restart",
+      "expected": "one venue order only; intent reconciled; recovery completes; stale worker fenced",
+      "observed": "unknown_before_restart=1 venue_entry_orders=1 intent_status=filled recoveries=2 stale_worker_fenced=True",
+      "passed": true,
+      "ledger_file": "reports/demo_restart.sqlite",
+      "events": [
+        {
+          "kind": "worker_started",
+          "ts": "2026-01-23T12:00:00Z",
+          "payload": {
+            "owner": "worker-1",
+            "token": 1
+          }
+        },
+        {
+          "kind": "risk_event",
+          "ts": "2026-01-23T12:00:00Z",
+          "payload": {
+            "correlation_id": "risk",
+            "created_at": "2026-01-23T12:00:00Z",
+            "detail": "restart: reconcile before new entries",
+            "environment": "paper",
+            "event_id": "evt_risk_d76ea946eba062b9",
+            "expires_at": "2026-01-24T12:00:00Z",
+            "from_state": "NORMAL",
+            "kind": "risk_event",
+            "knowledge_cutoff": "2026-01-23T12:00:00Z",
+            "producer": "risk_engine",
+            "schema_version": "1.0.0",
+            "synthetic": true,
+            "to_state": "RECOVERY",
+            "trigger": "startup_recovery"
+          }
+        },
+        {
+          "kind": "risk_event",
+          "ts": "2026-01-23T12:00:00Z",
+          "payload": {
+            "correlation_id": "risk",
+            "created_at": "2026-01-23T12:00:00Z",
+            "detail": "conditions cleared",
+            "environment": "paper",
+            "event_id": "evt_risk_b59307738905f33b",
+            "expires_at": "2026-01-24T12:00:00Z",
+            "from_state": "RECOVERY",
+            "kind": "risk_event",
+            "knowledge_cutoff": "2026-01-23T12:00:00Z",
+            "producer": "risk_engine",
+            "schema_version": "1.0.0",
+            "synthetic": true,
+            "to_state": "NORMAL",
+            "trigger": "clear:startup_recovery"
+          }
+        },
+        {
+          "kind": "recovery_complete",
+          "ts": "2026-01-23T12:00:00Z",
+          "payload": {
+            "state": "NORMAL"
+          }
+        },
+        {
+          "kind": "order_unknown",
+          "ts": "2026-01-23T12:45:03Z",
+          "payload": {
+            "error": "VenueTimeout",
+            "intent_id": "int_97697afc92e5a3cc"
+          }
+        },
+        {
+          "kind": "worker_started",
+          "ts": "2026-01-23T12:45:00Z",
+          "payload": {
+            "owner": "worker-2",
+            "token": 2
+          }
+        },
+        {
+          "kind": "risk_event",
+          "ts": "2026-01-23T12:45:00Z",
+          "payload": {
+            "correlation_id": "risk",
+            "created_at": "2026-01-23T12:45:00Z",
+            "detail": "restart: reconcile before new entries",
+            "environment": "paper",
+            "event_id": "evt_risk_e4e29fa2c203c9cf",
+            "expires_at": "2026-01-24T12:45:00Z",
+            "from_state": "NORMAL",
+            "kind": "risk_event",
+            "knowledge_cutoff": "2026-01-23T12:45:00Z",
+            "producer": "risk_engine",
+            "schema_version": "1.0.0",
+            "synthetic": true,
+            "to_state": "RECOVERY",
+            "trigger": "startup_recovery"
+          }
+        },
+        {
+          "kind": "risk_event",
+          "ts": "2026-01-23T12:45:00Z",
+          "payload": {
+            "correlation_id": "risk",
+            "created_at": "2026-01-23T12:45:00Z",
+            "detail": "conditions cleared",
+            "environment": "paper",
+            "event_id": "evt_risk_ee274e6bd0bbc8df",
+            "expires_at": "2026-01-24T12:45:00Z",
+            "from_state": "RECOVERY",
+            "kind": "risk_event",
+            "knowledge_cutoff": "2026-01-23T12:45:00Z",
+            "producer": "risk_engine",
+            "schema_version": "1.0.0",
+            "synthetic": true,
+            "to_state": "NORMAL",
+            "trigger": "clear:startup_recovery"
+          }
+        },
+        {
+          "kind": "recovery_complete",
+          "ts": "2026-01-23T12:45:00Z",
+          "payload": {
+            "state": "NORMAL"
+          }
+        },
+        {
+          "kind": "protective_action",
+          "ts": "2026-01-23T12:47:01Z",
+          "payload": {
+            "intent_id": "prot_3276dab916fc34bd",
+            "qty": "10",
+            "reason": "protect_position",
+            "side": "sell",
+            "stop_price": "72206.5",
+            "symbol": "BTCUSDT",
+            "type": "stop_market"
+          }
+        },
+        {
+          "kind": "order_ack",
+          "ts": "2026-01-23T12:47:01Z",
+          "payload": {
+            "intent_id": "prot_3276dab916fc34bd",
+            "venue_order_id": "v00000002"
+          }
+        }
+      ]
+    }
+  },
+  "summary": {
+    "equity": "9954.783146321940764379130910078259",
+    "wallet": "9954.783146321940764379130910078259",
+    "risk_state": "NORMAL",
+    "locks": {},
+    "cycles": 64,
+    "cycle_status_counts": {
+      "abstain": 61,
+      "authorized": 3
+    },
+    "fills": 6,
+    "fees_paid": "1.9073085",
+    "funding_paid": "-0.1794548219407643791309100782592216",
+    "outcomes": 3,
+    "risk_latency": {
+      "count": 480,
+      "p50_ms": 0.0454,
+      "p95_ms": 0.0909,
+      "p99_ms": 0.1226,
+      "max_ms": 0.1712,
+      "target_p99_ms": 100
+    },
+    "phi": {
+      "backend": "fake_phi_rules_v1",
+      "revision": "fake",
+      "prompt_version": "roles_v1",
+      "calls": 79,
+      "schema_failures": 0,
+      "timeouts": 0,
+      "oom": 0,
+      "overload_rejects": 0,
+      "context_rejects": 0,
+      "latency_p50_ms": 0.018,
+      "latency_p95_ms": 0.043,
+      "latency_p99_ms": 0.064,
+      "max_input_tokens": 1490
+    },
+    "jev": {
+      "calls": 3,
+      "valid": 3,
+      "invalid": 0,
+      "timeout": 0,
+      "unavailable": 0
+    },
+    "graph": {
+      "nodes": 179,
+      "edges": 30
+    }
+  }
+}

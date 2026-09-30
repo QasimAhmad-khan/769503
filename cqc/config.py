@@ -58,6 +58,9 @@ def validate(raw: dict) -> None:
 
     jev = raw["jev"]
     _require(jev["provider"] in JEV_PROVIDERS, f"jev.provider must be one of {sorted(JEV_PROVIDERS)}")
+    _require(jev.get("transport", "fake") in ("fake", "http"), "jev.transport must be fake or http")
+    if jev.get("transport") == "http":
+        _require(jev["provider"] != "fake", "http transport needs a real provider")
     _require(1 <= jev["max_trade_candidates"] <= 4, "Jev choice set is at most four candidates plus ABSTAIN")
     _require(jev["always_include_abstain"] is True, "ABSTAIN must always be offered")
     _require("latest" not in str(jev["model"]).lower(), "moving 'latest' model aliases are not allowed")
@@ -107,6 +110,8 @@ def promotion_blockers(cfg) -> list[str]:
     for key in ("host_ram_budget_gib", "gpu_vram_budget_gib", "disk_quota_gib"):
         if cfg["resources"][key] is None:
             blockers.append(f"resources.{key} unmeasured")
+    if cfg["jev"].get("transport", "fake") == "fake" or cfg["phi"].get("backend", "fake") == "fake":
+        blockers.append("fake model adapters configured (jev.transport / phi.backend)")
     if cfg["jev"].get("calibration_artifact_id") is None:
         blockers.append("jev.calibration_artifact_id missing (live requires locked calibration)")
     for key in ("model_revision", "runtime", "quantization"):

@@ -146,7 +146,7 @@ class JevSelector:
         criteria = {ABSTAIN: "Do not add exposure"}
         for c in ordered:
             criteria[c["id"]] = f"Select the supplied immutable {c['id']}: {c['action']}, {c['size_class']} size"
-        return {"model": self.cfg["model"], "state": state,
+        return {"model": self.cfg.get("request_model_alias", self.cfg["model"]), "state": state,
                 "questions": {QUESTION_ID: {"type": "choice", "instructions": JEV_INSTRUCTIONS, "criteria": criteria}}}
 
     def select(self, *, snapshot_id: str, hypothesis: str, facts: dict, candidates: list[dict], now: datetime,
