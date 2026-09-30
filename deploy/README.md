@@ -1,44 +1,39 @@
-# Model services (GPU host)
+# The local Phi server (GPU host)
 
-Nothing in this folder was run while this package was built: the build container had no GPU, and
-`huggingface.co` plus the market and chain APIs were blocked by its network policy. Treat every
-step below as **unverified** until you run it on your own machine.
+**Nothing in this folder was run while this package was built.** The build container had no GPU and
+could not reach `huggingface.co`. Treat every step below as unverified until you run it yourself.
 
-## 1. Open-Jev 9B (decision maker)
+## One model, four roles
 
-This build uses Open-Jev instead of hosted TypeSafe Jev. It is an independent MIT-licensed
-implementation (<https://github.com/Zefan-Cai/Open-Jev>). It serves the same `POST /v1/systemone`
-contract on loopback and returns `choice`, `probabilities` and `confidence` for a `choice` question.
-
-```bash
-docker compose -f deploy/docker-compose.yml up -d --build open-jev
-# or, from an Open-Jev checkout with a downloaded 9B package:
-python -m jev.server --checkpoint /path/to/Open-Jev-9B/package/checkpoint --max-length 4096
-```
-
-The Open-Jev README says the 9B model needs roughly one 16 GB GPU in bf16. Its revisions are pinned
-in `config/paper.json` (`jev.model_revision`, `jev.base_model_revision`). The requests use the
-server alias `open-jev`, so `python -m cqc check-jev` also checks `/v1/models`.
-
-Then switch the runtime to the real transport. Copy `config/paper.json`, set `jev.transport` to
-`"http"`, pass it with `--config`, and run:
+All four roles (screener, analyzer, decision_maker, risk_analyst) call the same server, model and
+revision. The trading runtime additionally serializes calls through `cqc.llm.phi.InferenceQueue`: one
+active call at a time, risk work first, admission deadlines, and overload shedding. The server's
+`--max-num-seqs 1` enforces the same limit on the GPU side. There is no second decision model and no
+remote fallback.
 
 ```bash
-python -m cqc check-jev            # /v1/models + one bounded synthetic choice request
+PHI_REVISION=<pinned commit> VLLM_TAG=<tested tag> docker compose -f deploy/docker-compose.yml up -d phi
+cp config/paper.json config/paper.phi-real.json   # then set phi.backend = "openai_compatible"
+python -m cqc check-phi --config config/paper.phi-real.json
 ```
 
-Open-Jev's choice scores are calibrated **classification** preferences. They are not trade win
-probabilities. Any acceptance threshold needs its own locked calibration artifact
-(`jev.calibration_artifact_id`) before it can matter.
+`check-phi` sends one schema-constrained request per role through the same backend. It reports schema
+validity, whether the decision stayed inside the offered set, latency, queue delay and token use.
 
-## 2. Phi-4-mini-instruct (screener / analyzer / risk-analyst roles)
+## Before trusting it
 
-```bash
-PHI_REVISION=<pinned commit> docker compose -f deploy/docker-compose.yml up -d phi
-python -m cqc check-phi --config config/paper.phi-real.json   # set phi.backend=openai_compatible
-```
+1. **Pin the revisions.** Pin the model revision (`phi.model_revision`) and the vLLM image, and record
+   the artifact hashes and licence.
+2. **Choose a quantization by measurement.** Compare a supported 4-bit build against a higher-precision
+   reference on:
+   - schema validity for each role
+   - evidence-request relevance
+   - decision agreement with the deterministic ranker on frozen candidate sets
+   - downstream paper PnL on identical candidate sets
 
-The three roles are prompt/schema profiles of **one** process (`--max-num-seqs 1`). Measure GPU
-memory and the host process tree, then record them in `resources.*`, keeping 20% headroom. Also
-compare a 4-bit artifact with the reference on schema validity and on downstream decisions. That
-comparison stays open until you run it.
+   Do not claim a speed or memory gain without that benchmark.
+3. **Measure resources.** Record peak VRAM (`nvidia-smi --query-gpu=memory.used --format=csv -l 1`),
+   host RSS of the whole process tree, and inference p50/p95/p99 and queue delay (`cqc` resource
+   summary). Put the results in `resources.*` with at least 20% headroom.
+4. **Keep log-probabilities diagnostic.** Setting `phi.record_token_logprobs=true` stores them only as
+   `uncalibrated_diagnostics`. They must not gate trades until a locked calibration study exists.

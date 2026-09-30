@@ -103,7 +103,8 @@ def test_reduction_marked_as_new_exposure_rejected_and_probability_above_one_rej
 def test_config_rejects_unsafe_overrides_and_is_immutable():
     for override in ({"live_trading_enabled": True}, {"remote_llm_fallback_enabled": True},
                      {"new_risk_on_model_failure": "ALLOW"}, {"phi": {"resident_model_processes": 2}},
-                     {"jev": {"max_trade_candidates": 9}}, {"jev": {"model": "jev-latest"}},
+                     {"decision": {"max_trade_candidates": 9}}, {"decision": {"selector": "open_jev"}},
+                     {"jev": {"provider": "open_jev"}}, {"phi": {"roles": ["screener", "analyzer", "risk_analyst"]}},
                      {"paper_risk": {"allow_stop_loosening": True}}, {"promotion": {"auto_promote": True}}):
         with pytest.raises(ConfigError):
             load_config(overrides=override)
@@ -111,4 +112,27 @@ def test_config_rejects_unsafe_overrides_and_is_immutable():
     with pytest.raises(TypeError):
         cfg["paper_risk"]["max_gross_notional_over_equity"] = 50  # model output cannot alter hard caps
     blockers = promotion_blockers(cfg)
-    assert any("no real venue" in b for b in blockers) and any("calibration" in b for b in blockers)
+    assert any("no real venue" in b for b in blockers) and any("fake Phi backend" in b for b in blockers)
+
+
+def test_legacy_decision_receipt_still_parses_but_is_labeled_legacy():
+    recs = json.loads((ROOT / "04_EXAMPLES.json").read_text())["records"]
+    legacy = next(r for r in recs if r["kind"] == "decision_receipt")
+    assert contracts.schema_errors(legacy) == []  # old ledgers stay readable
+    assert contracts.legacy_label("decision_receipt") == "legacy_jev_selection_v1"
+    assert contracts.legacy_label("decision_record") is None
+
+
+def test_decision_record_forbids_probabilities_and_off_menu_selection():
+    from cqc.selection import DeterministicRankSelector
+    from cqc.util import utc
+    cfg = load_config()
+    recs = json.loads((ROOT / "04_EXAMPLES.json").read_text())["records"]
+    plan = next(r for r in recs if r["kind"] == "candidate_plan")
+    rec = DeterministicRankSelector(cfg).select(snapshot_id="s", hypothesis="h", facts={}, plans=[plan], equity=10000,
+                                                now=utc(2026, 1, 1), correlation_id="c", ttl_seconds=60)
+    assert rec["selected_id"] == plan["candidate_id"] and rec["calibrated_selection_probability"] is None
+    for bad in ({"calibrated_selection_probability": 0.7}, {"selected_id": "cand_invented"},
+                {"validation_status": "timeout"}):
+        with pytest.raises(contracts.ContractError):
+            contracts.validate({**rec, **bad})

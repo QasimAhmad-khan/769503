@@ -1,56 +1,185 @@
 {
-  "notice": "SYNTHETIC market data and FAKE Phi/Jev adapters (labeled). Demonstrates mechanics and audit linkage only; it is not evidence of trading edge or model quality.",
+  "notice": "SYNTHETIC market data and a FAKE rule-based Phi backend (labeled 'fake_phi_rules_v2'). Demonstrates mechanics and audit linkage only \u2014 not model quality, not trading edge.",
   "scenarios": {
     "eligible_paper_trade": {
       "correlation_id": "cycle_8d920a882f726ec1",
-      "snapshot_id": "snap_918cdb64006f63ee",
-      "research_request_id": "req_a77d0415fcd70e08",
-      "evidence_ids": [
-        "ev_f4e4d3e6996ab6ab",
-        "ev_6c466a243c3b18f6",
-        "ev_57aff170a0f8bb13",
-        "ev_932e05dbeed0eb8d"
+      "snapshot_id": "snap_d5bf65830412ed8a",
+      "evidence_requests": [
+        {
+          "request_id": "req_a77d0415fcd70e08",
+          "round": 0,
+          "hypothesis": "trend_breakout_v1",
+          "items": [
+            [
+              "spread_bps",
+              "venue_market_data",
+              true
+            ],
+            [
+              "estimated_funding_rate",
+              "venue_market_data",
+              true
+            ],
+            [
+              "realized_vol_15m",
+              "venue_market_data",
+              true
+            ],
+            [
+              "chain_large_transfer_count_1h",
+              "onchain_finalized",
+              false
+            ]
+          ],
+          "producer": "phi:analyzer:fake_phi_rules_v2@fake"
+        }
+      ],
+      "fetch_plans": [
+        {
+          "producer": "phi:screener:fake_phi_rules_v2@fake",
+          "fetch": [
+            {
+              "action": "fetch",
+              "source_ids": [
+                "sim_venue_market_data"
+              ],
+              "variable": "spread_bps"
+            },
+            {
+              "action": "fetch",
+              "source_ids": [
+                "sim_venue_market_data"
+              ],
+              "variable": "estimated_funding_rate"
+            },
+            {
+              "action": "fetch",
+              "source_ids": [
+                "sim_venue_market_data"
+              ],
+              "variable": "realized_vol_15m"
+            },
+            {
+              "action": "fetch",
+              "source_ids": [
+                "synthetic_chain_fixture"
+              ],
+              "variable": "chain_large_transfer_count_1h"
+            }
+          ]
+        }
+      ],
+      "evidence_results": [
+        {
+          "round": 0,
+          "status": "complete",
+          "items": [
+            {
+              "variable": "spread_bps",
+              "status": "available",
+              "source_id": "sim_venue_market_data",
+              "source_timestamp": "2026-01-23T12:45:00Z",
+              "observation_timestamp": "2026-01-23T12:45:02Z",
+              "available_at": "2026-01-23T12:45:01Z",
+              "lag_seconds": 1.0,
+              "unit": "bps",
+              "content_sha256": "f75e3c2639b284c4172024691bd11da835d2872b812d7ed74119505b0a737ce4"
+            },
+            {
+              "variable": "estimated_funding_rate",
+              "status": "available",
+              "source_id": "sim_venue_market_data",
+              "source_timestamp": "2026-01-23T12:45:00Z",
+              "observation_timestamp": "2026-01-23T12:45:02Z",
+              "available_at": "2026-01-23T12:45:01Z",
+              "lag_seconds": 1.0,
+              "unit": "decimal_per_funding_interval",
+              "content_sha256": "5ad07a02a1179b0b404919ab0bee02c8068e748d8d1cf15489acca1a9f1f27eb"
+            },
+            {
+              "variable": "realized_vol_15m",
+              "status": "available",
+              "source_id": "sim_venue_market_data",
+              "source_timestamp": "2026-01-23T12:45:00Z",
+              "observation_timestamp": "2026-01-23T12:45:02Z",
+              "available_at": "2026-01-23T12:45:01Z",
+              "lag_seconds": 1.0,
+              "unit": "decimal_per_bar",
+              "content_sha256": "cb78d2fa8d5b41c644c0c20fe8cead01febd663aac2f91f1cbfca5afd8529a84"
+            },
+            {
+              "variable": "chain_large_transfer_count_1h",
+              "status": "available",
+              "source_id": "synthetic_chain_fixture",
+              "source_timestamp": "2026-01-23T11:00:00Z",
+              "observation_timestamp": "2026-01-23T12:00:02Z",
+              "available_at": "2026-01-23T12:00:00Z",
+              "lag_seconds": 3600.0,
+              "unit": "count_per_hour",
+              "content_sha256": "ef6fc7f7e1aa8c7a8ef4a64f952bef2bf1ee916c7a33fc3b038906a8cf592799"
+            }
+          ]
+        }
       ],
       "candidates": [
         {
-          "candidate_id": "cand_2b34ae20b10bf57c",
+          "candidate_id": "cand_86330df79b5c5d11",
           "action": "OPEN_LONG",
           "qty": "10",
           "stop": "72206.5",
           "utility_lcb_quote": "0.03",
           "effective_samples": 55,
-          "plan_sha256": "0a21d55ed3bce8ed78fafb0f8a9cbed86913ee9295320d3e8a5f11b0c493b02b"
+          "plan_sha256": "41c2b515e0cbf397ce7d926091a57cfb28eedb67f1c399a776446fce07710200"
         },
         {
-          "candidate_id": "cand_2f3f5ca8164eb1e6",
+          "candidate_id": "cand_befc93be1eee1cb6",
           "action": "OPEN_LONG",
           "qty": "5",
           "stop": "72206.5",
           "utility_lcb_quote": "0.01",
           "effective_samples": 55,
-          "plan_sha256": "cdbbae5805f3fb3c7d5b58e369fcecc00d3213bd26e3bbdb15925ac76534e1ca"
+          "plan_sha256": "675ea4dbb349aa13a9b539da58edcad8c7e90628e51ac1831d1e67ee2a748cf6"
+        }
+      ],
+      "analysis_packets": [
+        {
+          "producer": "phi:analyzer:fake_phi_rules_v2@fake",
+          "status": "candidates",
+          "passed": [
+            "cand_86330df79b5c5d11",
+            "cand_befc93be1eee1cb6"
+          ]
         }
       ],
       "decision": {
-        "decision_id": "dec_b5565a54bd1e3a9e",
-        "provider": "fake_jev_not_a_model",
-        "selected_id": "cand_2b34ae20b10bf57c",
-        "choice_probabilities": {
-          "ABSTAIN": 0.15,
-          "cand_2b34ae20b10bf57c": 0.7,
-          "cand_2f3f5ca8164eb1e6": 0.15
-        },
-        "score_semantics": "categorical_preference_not_win_probability"
+        "decision_id": "dec_ca9dcee5848f83b1",
+        "selector": "phi_decision_maker",
+        "model_id": "fake_phi_rules_v2",
+        "model_revision": "fake",
+        "backend_id": "in-process://fake-phi|fake_phi_rules_v2@fake",
+        "candidate_ids": [
+          "cand_86330df79b5c5d11",
+          "cand_befc93be1eee1cb6"
+        ],
+        "selected_id": "cand_86330df79b5c5d11",
+        "reason_codes": [
+          "EVIDENCE_SUPPORTS"
+        ],
+        "validation_status": "valid",
+        "calibrated_selection_probability": null,
+        "score_semantics": "none_uncalibrated_generative_choice"
       },
-      "authorization_id": "auth_58490f946264823a",
+      "authorization_id": "auth_b53b658bedae9c48",
       "intent": {
-        "intent_id": "int_8c4894641c1c46a8",
-        "client_order_id": "cqc8f68387f3c766f382b52205d74c1d",
+        "intent_id": "int_b9346ebc0d2852be",
+        "client_order_id": "cqca7743b74ea147b9cc0e60a77be248",
         "status": "filled",
         "qty": "10",
         "filled_qty": "10",
         "price_limit": "74513.3",
-        "stop_price": "72206.5"
+        "stop_price": "72206.5",
+        "auth_account_version": "acct_fbff4a5fc9e3ce27053e",
+        "auth_equity": "10000"
       },
       "fills": [
         {
@@ -101,21 +230,21 @@
       ],
       "outcomes": [
         {
-          "candidate_id": "cand_2b34ae20b10bf57c",
+          "candidate_id": "cand_86330df79b5c5d11",
           "closed": "2026-01-23T14:31:01Z",
           "net_pnl_quote": "-23.4256885",
           "opened": "2026-01-23T12:47:01Z",
           "symbol": "BTCUSDT"
         },
         {
-          "candidate_id": "cand_6cc24dc440c731c7",
+          "candidate_id": "cand_4c31b440b1fa0133",
           "closed": "2026-01-23T14:53:01Z",
           "net_pnl_quote": "-23.600558",
           "opened": "2026-01-23T13:02:01Z",
           "symbol": "ETHUSDT"
         },
         {
-          "candidate_id": "cand_0f42ad369883d830",
+          "candidate_id": "cand_aed27eb1e75e4e1e",
           "closed": "2026-01-23T19:04:01Z",
           "net_pnl_quote": "1.80939282194076437913091007825922",
           "opened": "2026-01-23T15:02:01Z",
@@ -123,8 +252,50 @@
         }
       ]
     },
+    "one_model_four_roles": {
+      "backend_id": "in-process://fake-phi|fake_phi_rules_v2@fake",
+      "calls_by_role": {
+        "screener": 21,
+        "analyzer": 37,
+        "decision_maker": 3,
+        "risk_analyst": 1
+      },
+      "max_concurrent_inference": 1,
+      "phi_summary": {
+        "model_id": "fake_phi_rules_v2",
+        "revision": "fake",
+        "endpoint": "in-process://fake-phi",
+        "prompt_version": "roles_v2",
+        "calls": 62,
+        "calls_by_role": {
+          "screener": 21,
+          "analyzer": 37,
+          "decision_maker": 3,
+          "risk_analyst": 1
+        },
+        "schema_failures": 0,
+        "timeouts": 0,
+        "oom": 0,
+        "context_rejects": 0,
+        "queue_rejected": 0,
+        "queue_shed": 0,
+        "max_concurrent_inference": 1,
+        "max_queue_depth": 1,
+        "cache_hit_rate": 0.0,
+        "inference_p50_ms": 0.015,
+        "inference_p95_ms": 0.025,
+        "inference_p99_ms": 0.028,
+        "queue_delay_p50_ms": 0.003,
+        "queue_delay_p95_ms": 0.005,
+        "queue_delay_p99_ms": 0.034,
+        "tokens_in_total": 65754,
+        "tokens_out_total": 13537,
+        "max_input_tokens": 1130,
+        "gpu_vram_peak_mib": null,
+        "gpu_note": "not measurable without the GPU-hosted server"
+      }
+    },
     "risk_reduction": {
-      "description": "Deterministic protective reductions/exits executed without any model call",
       "market_reductions": [
         {
           "intent_id": "prot_1f0e05d445c1b252",
@@ -152,38 +323,35 @@
           "price": "2905.27"
         }
       ],
-      "risk_events": [
+      "risk_analyst_proposals": [
         {
+          "action_category": "none",
           "correlation_id": "risk",
-          "created_at": "2026-01-23T11:45:00Z",
-          "detail": "restart: reconcile before new entries",
+          "created_at": "2026-01-23T19:45:01Z",
           "environment": "paper",
-          "event_id": "evt_risk_32c58eaec934b090",
-          "expires_at": "2026-01-24T11:45:00Z",
-          "from_state": "NORMAL",
-          "kind": "risk_event",
-          "knowledge_cutoff": "2026-01-23T11:45:00Z",
-          "producer": "risk_engine",
+          "event_id": "evt_480a808349d23cce",
+          "evidence_ids": [],
+          "expires_at": "2026-01-23T19:45:33Z",
+          "kind": "adjustment_proposal",
+          "knowledge_cutoff": "2026-01-23T19:45:01Z",
+          "position_refs": [],
+          "producer": "phi:risk_analyst:fake_phi_rules_v2@fake",
+          "reason_codes": [
+            "ADVISORY_ONLY"
+          ],
           "schema_version": "1.0.0",
+          "status": "no_change",
+          "stress_scenarios": [],
           "synthetic": true,
-          "to_state": "RECOVERY",
-          "trigger": "startup_recovery"
-        },
+          "trigger": "demo_material_change"
+        }
+      ],
+      "adjustments": [
         {
-          "correlation_id": "risk",
-          "created_at": "2026-01-23T11:45:00Z",
-          "detail": "conditions cleared",
-          "environment": "paper",
-          "event_id": "evt_risk_ebe43f1de41c68c5",
-          "expires_at": "2026-01-24T11:45:00Z",
-          "from_state": "RECOVERY",
-          "kind": "risk_event",
-          "knowledge_cutoff": "2026-01-23T11:45:00Z",
-          "producer": "risk_engine",
-          "schema_version": "1.0.0",
-          "synthetic": true,
-          "to_state": "NORMAL",
-          "trigger": "clear:startup_recovery"
+          "applied": [],
+          "category": "none",
+          "proposal_event_id": "evt_480a808349d23cce",
+          "rejected": []
         }
       ]
     },
@@ -195,28 +363,29 @@
         "NO_ELIGIBLE_CANDIDATE",
         "NO_REGISTERED_SIGNAL"
       ],
-      "jev_abstain_receipt": {
-        "decision_id": "dec_0a9498ed0bee0beb",
+      "phi_abstain_record": {
+        "decision_id": "dec_79eb898e83eccfbe",
         "candidate_ids": [
-          "cand_2b34ae20b10bf57c",
-          "cand_2f3f5ca8164eb1e6"
+          "cand_53bc63a423e25879",
+          "cand_1b17c5c390b1cc26"
         ],
         "selected_id": "ABSTAIN",
         "validation_status": "valid",
         "reason_codes": [
-          "MODEL_ABSTAINED"
-        ]
+          "INSUFFICIENT_EVIDENCE"
+        ],
+        "calibrated_selection_probability": null
       },
-      "entries_after_jev_abstain": 0
+      "entries_after_abstain": 0
     },
     "partial_fill": {
-      "intent_id": "int_97697afc92e5a3cc",
+      "intent_id": "int_067d32845285f1cb",
       "ordered_qty": "10",
       "filled_qty": "2",
       "status": "canceled",
       "reservation": {
-        "reservation_id": "res_18eadf1f3370351d",
-        "intent_id": "int_97697afc92e5a3cc",
+        "reservation_id": "res_7ef288715f9e289f",
+        "intent_id": "int_067d32845285f1cb",
         "symbol": "BTCUSDT",
         "stop_risk_per_contract": "2.45582660",
         "notional_per_contract": "74.5133",
@@ -236,14 +405,30 @@
           "price": "74374.0",
           "ts": "2026-01-23T12:48:00Z"
         }
-      ],
-      "terminal_events": [
-        {
-          "intent_id": "int_97697afc92e5a3cc",
-          "reason": "venue_confirmed",
-          "status": "canceled"
-        }
       ]
+    },
+    "admission_rejections": [
+      {
+        "scenario": "admission_account_changed",
+        "injected": "wallet changed between authorization and dispatch",
+        "expected": "entry rejected at dispatch with ACCOUNT_VERSION_CHANGED / EQUITY_CHANGED; nothing sent",
+        "observed": "queued=1 rejections=[['ACCOUNT_VERSION_CHANGED', 'EQUITY_CHANGED_OR_UNKNOWN']] venue_orders=0",
+        "passed": true
+      },
+      {
+        "scenario": "admission_price_collar",
+        "injected": "executable quote moved 2% after authorization",
+        "expected": "entry rejected at dispatch with PRICE_OUTSIDE_COLLAR; nothing sent",
+        "observed": "rejections=[['PRICE_OUTSIDE_COLLAR']] venue_orders=0",
+        "passed": true
+      }
+    ],
+    "protection_during_slow_phi": {
+      "scenario": "slow_phi_does_not_delay_protection",
+      "injected": "2 s Phi call in flight + mark near liquidation",
+      "expected": "reduce-only protective order placed while Phi is still busy",
+      "observed": "exit_placed=True reaction_ms=20.8 phi_still_busy=True loop_errors=[]",
+      "passed": true
     },
     "restart_recovery": {
       "scenario": "ack_loss_restart",
@@ -251,7 +436,6 @@
       "expected": "one venue order only; intent reconciled; recovery completes; stale worker fenced",
       "observed": "unknown_before_restart=1 venue_entry_orders=1 intent_status=filled recoveries=2 stale_worker_fenced=True",
       "passed": true,
-      "ledger_file": "reports/demo_restart.sqlite",
       "events": [
         {
           "kind": "worker_started",
@@ -259,46 +443,6 @@
           "payload": {
             "owner": "worker-1",
             "token": 1
-          }
-        },
-        {
-          "kind": "risk_event",
-          "ts": "2026-01-23T12:00:00Z",
-          "payload": {
-            "correlation_id": "risk",
-            "created_at": "2026-01-23T12:00:00Z",
-            "detail": "restart: reconcile before new entries",
-            "environment": "paper",
-            "event_id": "evt_risk_d76ea946eba062b9",
-            "expires_at": "2026-01-24T12:00:00Z",
-            "from_state": "NORMAL",
-            "kind": "risk_event",
-            "knowledge_cutoff": "2026-01-23T12:00:00Z",
-            "producer": "risk_engine",
-            "schema_version": "1.0.0",
-            "synthetic": true,
-            "to_state": "RECOVERY",
-            "trigger": "startup_recovery"
-          }
-        },
-        {
-          "kind": "risk_event",
-          "ts": "2026-01-23T12:00:00Z",
-          "payload": {
-            "correlation_id": "risk",
-            "created_at": "2026-01-23T12:00:00Z",
-            "detail": "conditions cleared",
-            "environment": "paper",
-            "event_id": "evt_risk_b59307738905f33b",
-            "expires_at": "2026-01-24T12:00:00Z",
-            "from_state": "RECOVERY",
-            "kind": "risk_event",
-            "knowledge_cutoff": "2026-01-23T12:00:00Z",
-            "producer": "risk_engine",
-            "schema_version": "1.0.0",
-            "synthetic": true,
-            "to_state": "NORMAL",
-            "trigger": "clear:startup_recovery"
           }
         },
         {
@@ -313,7 +457,7 @@
           "ts": "2026-01-23T12:45:03Z",
           "payload": {
             "error": "VenueTimeout",
-            "intent_id": "int_97697afc92e5a3cc"
+            "intent_id": "int_067d32845285f1cb"
           }
         },
         {
@@ -325,71 +469,10 @@
           }
         },
         {
-          "kind": "risk_event",
-          "ts": "2026-01-23T12:45:00Z",
-          "payload": {
-            "correlation_id": "risk",
-            "created_at": "2026-01-23T12:45:00Z",
-            "detail": "restart: reconcile before new entries",
-            "environment": "paper",
-            "event_id": "evt_risk_e4e29fa2c203c9cf",
-            "expires_at": "2026-01-24T12:45:00Z",
-            "from_state": "NORMAL",
-            "kind": "risk_event",
-            "knowledge_cutoff": "2026-01-23T12:45:00Z",
-            "producer": "risk_engine",
-            "schema_version": "1.0.0",
-            "synthetic": true,
-            "to_state": "RECOVERY",
-            "trigger": "startup_recovery"
-          }
-        },
-        {
-          "kind": "risk_event",
-          "ts": "2026-01-23T12:45:00Z",
-          "payload": {
-            "correlation_id": "risk",
-            "created_at": "2026-01-23T12:45:00Z",
-            "detail": "conditions cleared",
-            "environment": "paper",
-            "event_id": "evt_risk_ee274e6bd0bbc8df",
-            "expires_at": "2026-01-24T12:45:00Z",
-            "from_state": "RECOVERY",
-            "kind": "risk_event",
-            "knowledge_cutoff": "2026-01-23T12:45:00Z",
-            "producer": "risk_engine",
-            "schema_version": "1.0.0",
-            "synthetic": true,
-            "to_state": "NORMAL",
-            "trigger": "clear:startup_recovery"
-          }
-        },
-        {
           "kind": "recovery_complete",
           "ts": "2026-01-23T12:45:00Z",
           "payload": {
             "state": "NORMAL"
-          }
-        },
-        {
-          "kind": "protective_action",
-          "ts": "2026-01-23T12:47:01Z",
-          "payload": {
-            "intent_id": "prot_3276dab916fc34bd",
-            "qty": "10",
-            "reason": "protect_position",
-            "side": "sell",
-            "stop_price": "72206.5",
-            "symbol": "BTCUSDT",
-            "type": "stop_market"
-          }
-        },
-        {
-          "kind": "order_ack",
-          "ts": "2026-01-23T12:47:01Z",
-          "payload": {
-            "intent_id": "prot_3276dab916fc34bd",
-            "venue_order_id": "v00000002"
           }
         }
       ]
@@ -409,39 +492,74 @@
     "fees_paid": "1.9073085",
     "funding_paid": "-0.1794548219407643791309100782592216",
     "outcomes": 3,
-    "risk_latency": {
+    "risk_watchdog_latency": {
       "count": 480,
-      "p50_ms": 0.0454,
-      "p95_ms": 0.0909,
-      "p99_ms": 0.1226,
-      "max_ms": 0.1712,
+      "p50_ms": 0.042,
+      "p95_ms": 0.0618,
+      "p99_ms": 0.097,
+      "max_ms": 0.1112,
       "target_p99_ms": 100
     },
+    "protect_cycle_latency_ms": {
+      "p50": 0.241,
+      "p99": 0.571,
+      "max": 0.648
+    },
+    "decision_cycle_latency_ms": {
+      "p50": 4.621,
+      "p99": 20.427,
+      "max": 20.427
+    },
+    "selector": "phi_decision_maker",
+    "phi_features": [
+      "analysis",
+      "decision",
+      "evidence",
+      "risk"
+    ],
     "phi": {
-      "backend": "fake_phi_rules_v1",
+      "model_id": "fake_phi_rules_v2",
       "revision": "fake",
-      "prompt_version": "roles_v1",
-      "calls": 79,
+      "endpoint": "in-process://fake-phi",
+      "prompt_version": "roles_v2",
+      "calls": 62,
+      "calls_by_role": {
+        "screener": 21,
+        "analyzer": 37,
+        "decision_maker": 3,
+        "risk_analyst": 1
+      },
       "schema_failures": 0,
       "timeouts": 0,
       "oom": 0,
-      "overload_rejects": 0,
       "context_rejects": 0,
-      "latency_p50_ms": 0.018,
-      "latency_p95_ms": 0.043,
-      "latency_p99_ms": 0.064,
-      "max_input_tokens": 1490
+      "queue_rejected": 0,
+      "queue_shed": 0,
+      "max_concurrent_inference": 1,
+      "max_queue_depth": 1,
+      "cache_hit_rate": 0.0,
+      "inference_p50_ms": 0.015,
+      "inference_p95_ms": 0.025,
+      "inference_p99_ms": 0.028,
+      "queue_delay_p50_ms": 0.003,
+      "queue_delay_p95_ms": 0.005,
+      "queue_delay_p99_ms": 0.034,
+      "tokens_in_total": 65754,
+      "tokens_out_total": 13537,
+      "max_input_tokens": 1130,
+      "gpu_vram_peak_mib": null,
+      "gpu_note": "not measurable without the GPU-hosted server"
     },
-    "jev": {
+    "selector_stats": {
       "calls": 3,
       "valid": 3,
-      "invalid": 0,
-      "timeout": 0,
-      "unavailable": 0
+      "abstain": 0,
+      "failures": 0
     },
     "graph": {
       "nodes": 179,
       "edges": 30
-    }
+    },
+    "admission_rejections": 0
   }
 }

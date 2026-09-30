@@ -23,7 +23,11 @@ from .util import UTC, iso, stable_id
 
 class Connector:
     source_id = "abstract"
+    source_class = "abstract"
     features: dict = {}  # feature -> unit
+    # True only when the connector can reproduce what was knowable at a past time (captured arrival times or a
+    # documented availability model). Replays/backtests exclude features from connectors without it.
+    historical_availability_proven = False
 
     def fetch(self, feature: str, instrument: dict, cutoff: datetime, correlation_id: str) -> list[dict]:
         raise NotImplementedError
@@ -31,6 +35,8 @@ class Connector:
 
 class MarketContextConnector(Connector):
     source_id = "sim_venue_market_data"
+    source_class = "venue_market_data"
+    historical_availability_proven = True  # bars carry their publication time (end + 1s)
     features = {"estimated_funding_rate": "decimal_per_funding_interval", "spread_bps": "bps",
                 "realized_vol_15m": "decimal_per_bar"}
 
@@ -62,6 +68,8 @@ class FixtureChainConnector(Connector):
     """SYNTHETIC finalized-chain activity index. Blocks every 10 minutes, finalized after 6
     confirmations (60 min). Reorgs can be injected to test invalidation."""
     source_id = "synthetic_chain_fixture"
+    source_class = "onchain_finalized"
+    historical_availability_proven = True  # SYNTHETIC: availability = block time + 6 confirmations by construction
     features = {"chain_large_transfer_count_1h": "count_per_hour"}
     confirmations = 6
     block_seconds = 600
@@ -109,6 +117,8 @@ class EsploraBlockConnector(Connector):
     tests exercise it with recorded responses through the injectable `http_get`.
     """
     source_id = "esplora_btc_blocks"
+    source_class = "onchain_finalized"
+    historical_availability_proven = False  # forward capture only
     features = {"btc_finalized_block_tx_count": "tx_count"}
     confirmations = 6
 
@@ -154,8 +164,16 @@ class ConnectorRegistry:
     def register(self, connector: Connector):
         self.connectors[connector.source_id] = connector
 
-    def approved(self, feature: str) -> list[str]:
-        return [sid for sid, c in self.connectors.items() if feature in c.features]
+    def approved(self, feature: str, source_class: str | None = None, replay: bool = False) -> list[str]:
+        return [sid for sid, c in self.connectors.items() if feature in c.features
+                and (source_class is None or c.source_class == source_class)
+                and (not replay or c.historical_availability_proven)]
+
+    def source_class(self, feature: str) -> str | None:
+        for c in self.connectors.values():
+            if feature in c.features:
+                return c.source_class
+        return None
 
     def unit(self, feature: str) -> str | None:
         for c in self.connectors.values():

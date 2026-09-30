@@ -1,109 +1,108 @@
-# claude-quant-crypto: paper build of the QuantDinger + Phi + Jev specification
+# claude-quant-crypto: one local Phi model, four roles, deterministic risk (paper only)
 
-This is a **paper-only** research and trading system for BTC and ETH linear USDT perpetuals. It
-follows the build package in this repository (`00_START_HERE.md` through `07_PACKAGE_VERIFICATION.md`).
+A **paper-only** research and trading system for BTC and ETH linear USDT perpetuals.
 
-- **One Phi service, three logical roles:** screener, analyzer and risk analyst. They share one
-  backend instance with a bounded queue, token budgets and strict role-result schemas.
-- **Jev selects among candidates.** The decision maker is **Open-Jev**
-  (<https://github.com/Zefan-Cai/Open-Jev>, 9B package). It speaks the TypeSafe-style
-  `POST /v1/systemone` contract. It can only pick `ABSTAIN` or one of at most four immutable,
-  prechecked candidate IDs.
-- **Deterministic code owns every trusted number.** That covers features, forecasts, costs,
-  sizing, hard risk, authorization, execution, reconciliation and accounting.
-- **Fail-closed autonomous policy (`autonomous_evidence_v1`).** A model error, missing or stale
-  required evidence, an expired decision, a failed audit write, an unsupported route or a provider
-  fallback means **no new risk**. Protective exits never wait for a model.
+- **One Phi model does all the language work.** It serves the screener, analyzer, decision_maker and
+  risk_analyst roles through one inference service (one endpoint, one model revision, one serialized
+  admission queue).
+- **Deterministic code owns every trusted number.** That covers forecasts, costs, sizing, hard risk,
+  authorization, protective exits, execution and accounting.
+- **Jev is only a design inspiration.** Phi makes a bounded, auditable choice among at most four
+  immutable candidate IDs plus `ABSTAIN`. There is no Jev or Open-Jev model, service or dependency
+  (see `docs/ADR-002-one-phi-model.md`).
 
-> **Status: live trading is disabled and cannot be enabled by configuration.** The system runs on
-> **labeled synthetic market data** with **labeled fake Phi/Jev adapters**, because the build
-> container had no GPU and was blocked from Hugging Face and the market and chain APIs. The real
-> Open-Jev and Phi HTTP adapters are implemented and tested against local stubs, not against the
-> real models. Nothing here is evidence of a trading edge. See `docs/GAPS_AND_UNVERIFIED.md`.
+> **Status: live trading is disabled and cannot be enabled by configuration.** Everything here ran on
+> **labeled synthetic market data** with a **labeled rule-based fake Phi backend**. The build container
+> had no GPU and no Hugging Face, exchange or chain egress. The real Phi HTTP path is implemented and
+> tested against a local OpenAI-compatible stub, not against Phi itself. **Nothing here is evidence of
+> a trading edge or of model value.** See `docs/GAPS_AND_UNVERIFIED.md`.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    MKT[Market / account events + 1 s timer] --> PL[Protection loop thread<br/>reconcile · watchdog · stops · reduce-only exits]
+    PL -->|no model calls| EX[Executor + durable ledger]
+    subgraph PHI[ONE local Phi-4-mini-instruct server · one revision · serialized priority queue]
+        SC[screener role]
+        AN[analyzer role]
+        DM[decision_maker role]
+        RA[risk_analyst role]
+    end
+    BAR[Completed 15-min bar] --> AN
+    AN -->|typed EvidenceRequest ≤1 follow-up| SC
+    SC -->|fetch_plan over whitelisted sources| CON[Connectors + point-in-time store]
+    CON -->|host-stamped evidence: timestamps, lag, units, hash| Q[Deterministic quant tools<br/>forecast · costs · sizing · immutable plans]
+    Q --> RP[Risk precheck incl. stress/concentration/margin]
+    RP -->|≤4 prechecked IDs| AN
+    AN -->|AnalysisPacket: subset only| DM
+    DM -->|one offered ID or ABSTAIN + reason codes| AU[Fresh authorization + autonomous_evidence_v1 gate]
+    AU --> LED[Atomic persist: decision record · authorization · reservation · intent]
+    LED --> AD[Dispatch-time admission: fresh positions/equity/marks/collar/limits]
+    AD --> EX
+    PL -. state change .-> RA
+    RA -->|advisory proposal, no quantities| VAL[Deterministic validation → risk-reducing action only]
+    VAL --> EX
+```
 
 ## Quick start
 
 ```bash
 python -m pip install -e '.[test]'     # numpy, jsonschema, pytest
-python -m pytest -q                    # 53 tests: accounting, PIT integrity, faults, replay, adapters
-python -m cqc demo                     # Phase-1 demo -> reports/demo_report.md
-python -m cqc faults                   # fault injection -> reports/fault_injection.md
-python -m cqc evaluate                 # paired ablations -> reports/evaluation_report.md
-python -m cqc soak --days 14           # simulated-time soak (RSS, DB growth, risk latency)
+python -m pytest -q                    # 64 tests
+python -m cqc faults                   # 24 fault scenarios -> reports/fault_injection.md
+python -m cqc demo                     # one backend, four roles, linked audit chain -> reports/demo_report.md
+python -m cqc evaluate                 # paired ablations P0..P4 -> reports/evaluation_report.md
+python -m cqc soak --days 14           # simulated-time soak (RSS, DB growth, graph size, latencies)
 python -m cqc readiness                # lists every unresolved live/promotion blocker (exit 1)
+python -m cqc check-phi                # GPU host only: one call per role through the configured Phi server
 ```
 
-To use the real models (GPU host), see `deploy/README.md`, then run `python -m cqc check-jev` and
-`python -m cqc check-phi`.
+## Guarantees enforced in code (and tested)
 
-## How a decision flows
-
-```
-1-minute bar → venue match → reconcile fills/funding → risk watchdog → deterministic protection
-15-minute bar → screen (allowlist, spread, history)
-             → Phi analyzer: ResearchRequest (host validates hypothesis/instrument/features/sources)
-             → Phi screener: retrieve_evidence_batch tool request (allowlisted) → connectors → PIT store
-             → ≤1 follow-up round; required evidence missing/stale → ABSTAIN
-             → quant tools: causal features, empirical path-outcome forecast (stop-first rule),
-               costs, funding, stop-risk sizing → immutable CandidatePlans (hash-bound)
-             → risk precheck (state, per-trade/aggregate stop risk incl. reservations, gross, symbol, margin)
-             → Phi analyzer: AnalysisPacket may only pass a subset of eligible IDs
-             → Jev: ABSTAIN or one candidate ID (validated labels, probabilities, argmax, model)
-             → fresh RiskAuthorization (plan hash, account version, policy version, expiry)
-             → autonomous_evidence_v1 gate → atomic persist (receipt + auth + reservation + intent)
-             → dispatch: persist `submitting` before send; timeout → `unknown` → reconcile by client ID
-```
+| Guarantee | Where | Test / scenario |
+|---|---|---|
+| All four roles use the same backend and model revision; at most one inference runs at a time; risk work is admitted first | `llm/phi.py` `PhiService`, `InferenceQueue` | `four_roles_one_backend`, `test_inference_is_serialized_and_risk_work_is_admitted_first` |
+| The decision can only be an offered ID or `ABSTAIN` (schema enum per call, plus a host check) | `selection.py`, `llm/phi.py:role_schema` | `phi_decision_invent_candidate`, `test_decision_off_menu_or_server_error_means_abstain` |
+| No probabilities are manufactured (`calibrated_selection_probability` must be null) | `contracts.decision_record` | `test_decision_record_forbids_probabilities_and_off_menu_selection` |
+| Timeout, OOM, malformed output, overload, oversized context or a budget overrun mean `ABSTAIN` or a blocked cycle | `selection.py`, `runtime.py` | `phi_decision_*`, `phi_*` scenarios |
+| Protection never waits for Phi | `protection.py`, `runtime.protect` | `slow_phi_does_not_delay_protection` |
+| Entries are re-validated on fresh state immediately before sending | `risk.admission_check`, `runtime._admission` | `admission_account_changed`, `admission_price_collar` |
+| The stress limit is enforced by the precheck itself, not only by sizing | `risk.precheck` | `test_stress_room_is_enforced_by_precheck_independently_of_sizing` |
+| Bounded evidence dialogue: typed request, whitelisted fetch, host-stamped evidence, at most one follow-up round | `runtime._evidence_dialogue` | `phi_injected`, `missing_required_evidence` |
+| On-chain data without proven historical availability is excluded from replays | `onchain.Connector.historical_availability_proven` | registry logic in `runtime._variables` |
+| Legacy Open-Jev records are identified, never replayed or accepted | `contracts.LEGACY_EVENT_KINDS`, `policy.check_entry` | `legacy_jev_ledger` |
+| Risk-analyst advice is only applied after deterministic validation; it can only reduce risk | `runtime.apply_proposal` | `test_risk_analyst_proposals_are_validated_and_bounded_in_code` |
 
 ## Module map
 
 | Module | Responsibility |
 |---|---|
-| `cqc/config.py` | Load, validate and deep-freeze the paper profile. Unsafe settings are rejected; `promotion_blockers()` lists what is unresolved |
-| `cqc/contracts.py` | Starter JSON Schema (`03_CONTRACTS`) plus the extension payloads (ToolRequest/Result, EvidenceResult, AnalysisPacket, AdjustmentProposal, RiskAuthorization, RiskEvent) and semantic validators |
-| `cqc/pit.py` | Point-in-time evidence store: as-of queries, revisions, invalidation. Missing data is null with a reason, never zero |
-| `cqc/onchain.py` | Connector registry. Market-context connector, synthetic finalized-chain fixture with reorgs, and a real Esplora forward-capture connector (stub-tested) |
-| `cqc/market.py` | Instruments, labeled synthetic 1-minute fixture, point-in-time bar access |
-| `cqc/quant.py` | Registered numerical tools, empirical forecast, sizing formula, immutable plans, dominance removal |
-| `cqc/risk.py` | Risk state locks (NORMAL/NO_NEW_RISK/REDUCE_ONLY/RECOVERY/HALTED), watchdog, precheck, authorization, latency |
-| `cqc/ledger.py` | Durable SQLite ledger standing in for PostgreSQL: events, intents, reservations, fills, fencing lease, graph tables |
-| `cqc/venue.py` | Simulated linear-perp venue: partial fills, gap-through stops, funding, tiered liquidation, fault flags |
-| `cqc/execution.py` | Executor: atomic entry persistence, dispatch, reconciliation, fill dedupe, protection, restart |
-| `cqc/graph.py` | Bounded evidence graph with hop, node, edge and byte caps and missing-required reporting |
-| `cqc/llm/phi.py`, `cqc/llm/jev.py` | Model adapters (fake, local HTTP, recorded replay) and output validation |
-| `cqc/policy.py` | The `autonomous_evidence_v1` entry gate |
-| `cqc/runtime.py` | Paper runtime: protection loop and bounded decision loop |
-| `cqc/faults.py`, `cqc/demo.py`, `cqc/evaluate.py` | Fault scenarios, operator demo, paired ablations |
+| `cqc/llm/phi.py` | The single Phi service: backends (fake, OpenAI-compatible, recorded replay), admission queue, schemas, metrics |
+| `cqc/llm/prompts.py` | Versioned prompts for the four roles (`roles_v2`, `decision_v1`) |
+| `cqc/selection.py` | `PhiDecisionSelector` and the `DeterministicRankSelector` baseline, both producing `decision_record`s |
+| `cqc/runtime.py` | Paper runtime: protection, evidence dialogue, candidates, decision, authorization, admission, risk-analyst application, graph retention |
+| `cqc/protection.py` | Threaded protection loop (event- and timer-driven), independent of inference |
+| `cqc/risk.py` | Locks and states, watchdog, precheck (stop risk, gross, symbol, margin, stress), authorization, dispatch admission |
+| `cqc/execution.py`, `cqc/venue.py`, `cqc/ledger.py` | Durable intents, reservations and fencing; simulated venue; reconciliation |
+| `cqc/contracts.py`, `cqc/pit.py`, `cqc/onchain.py`, `cqc/graph.py`, `cqc/quant.py` | Contracts, point-in-time evidence, connectors, bounded graph, numerical tools |
+| `cqc/faults.py`, `cqc/demo.py`, `cqc/evaluate.py` | Fault injection, operator demo, paired ablations |
 
 ## Operator runbook (paper)
 
-- **Start/restart.** A worker takes the fencing lease, enters `RECOVERY`, reconciles orders, fills,
-  positions and protective stops, and only then returns to `NORMAL`. A stale worker's writes raise
-  `StaleFencingToken`.
-- **Kill switch.** `RiskEngine.operator_halt(now)` sets `HALTED`. Only
-  `clear_lock("operator_halt", now, operator=True)` clears it. Model health never clears operator,
-  drawdown or daily-loss locks.
-- **Lock clearing.** `stale_feed`, `phi_health`, `jev_health`, `audit_failure` and `reconciliation`
-  clear automatically after a stable healthy interval. `daily_loss` clears at the next 00:00 UTC
-  reference. `drawdown` needs an operator.
-- **What to watch.** `risk_event`, `protective_action`, `order_unknown`, `recovery_pending`,
-  `liquidation` and `risk_analyst_unavailable` events, plus `summary()["risk_latency"]` against the
-  100 ms p99 target.
-- **Replay.** Recorded Jev responses (`jev_raw_response` events) replay deterministically through
-  `RecordedJevTransport`. `Ledger.event_digest()` proves identical event and accounting output.
-  Rerunning a model is a separate experiment.
-- **Backups.** The ledger is a single SQLite file (`--db path`). Copy it while no worker holds the
-  lease. In QuantDinger this maps to the existing PostgreSQL backups.
-- **Rollback.** Every artifact that can change behavior is versioned in the records: policy
-  (`autonomous_evidence_v1`), prompts (`roles_v1`, `selection_v1`), tool versions (`*_v1`), and
-  model IDs and revisions in each receipt. To roll back, pin the previous config and code, then
-  replay the recorded ledger.
-
-## Relation to QuantDinger
-
-The package asks for integration inside QuantDinger. This repository held only the specification,
-so the system is built as a **standalone module with the same boundaries**, ready to port into
-`backend_api_python/app/services/`. `docs/ADR-001-standalone-module.md` maps each module to its
-QuantDinger integration point and lists the porting work that remains.
-
-Licenses: QuantDinger is Apache-2.0. Open-Jev and Phi-4-mini-instruct are MIT. No third-party
-code is vendored here.
+- **Start/restart.** A worker takes the fencing lease, enters `RECOVERY`, reconciles, then returns
+  to `NORMAL`. Ledgers written by the superseded Open-Jev path are flagged as
+  `legacy_records_detected` and treated as audit-only.
+- **Kill switch.** `RiskEngine.operator_halt(now)`. Only `clear_lock("operator_halt", now,
+  operator=True)` clears it.
+- **Lock clearing.** Phi health, audit-failure, stale-feed and reconciliation locks clear
+  automatically after a stable interval. The risk-analyst advisory `NO_NEW_RISK` lasts 15 minutes.
+  `daily_loss` clears at 00:00 UTC. `drawdown` needs an operator.
+- **What to watch.** The `admission_rejected`, `risk_event`, `protective_action`, `order_unknown`,
+  `adjustment_applied`/`adjustment_not_applied` and `risk_analyst_unavailable` events, plus the
+  `summary()` latency blocks and the `phi` resource summary.
+- **Replay.** Recorded Phi outputs (`phi_raw_response`) replay through `RecordedPhiBackend`.
+  `Ledger.trading_digest()` shows identical plans, orders, fills and outcomes. The replay's decision
+  records name the replay backend, so a replay is never mistaken for a live model run.
+- **Changing prompts or parameters.** New prompts and parameters must be versioned, evaluated offline
+  and released through an operator gate. Nothing self-modifies live policy.

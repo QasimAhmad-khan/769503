@@ -3,7 +3,7 @@
 Each policy is a *separate full portfolio replay* (no shared account state after choices
 diverge). Paired daily PnL differences get a moving-block bootstrap interval that preserves
 serial and cross-asset dependence (daily portfolio PnL). On the labeled synthetic fixture with
-FAKE model adapters this measures the harness, not Phi/Jev value, and cannot support an alpha
+a FAKE (rule-based) Phi backend this measures the harness, not Phi value, and cannot support an alpha
 claim. Promotion stays blocked while the manifest has unresolved fields.
 """
 from __future__ import annotations
@@ -19,11 +19,14 @@ from . import faults
 from .config import load_config, promotion_blockers
 from .util import D, ZERO, iso
 
-POLICIES = {
-    "C_deterministic": {"selector": "deterministic", "use_phi": False, "use_onchain": True},
-    "D_fake_phi_screen_deterministic_choice": {"selector": "deterministic", "use_phi": True, "use_onchain": True},
-    "E_fake_phi_plus_fake_jev": {"selector": "jev", "use_phi": True, "use_onchain": True},
-    "F_E_without_onchain": {"selector": "jev", "use_phi": True, "use_onchain": False},
+POLICIES = {  # identical data, capital, risk limits, candidate generator and execution model
+    "P0_deterministic_baseline": {"use_phi": False, "phi_features": (), "use_onchain": True},
+    "P1_phi_screening": {"use_phi": True, "phi_features": ("evidence",), "use_onchain": True},
+    "P2_phi_screening_analysis": {"use_phi": True, "phi_features": ("evidence", "analysis"), "use_onchain": True},
+    "P3_phi_all_four_roles": {"use_phi": True, "phi_features": ("evidence", "analysis", "decision", "risk"),
+                              "use_onchain": True},
+    "P4_all_four_without_onchain": {"use_phi": True, "phi_features": ("evidence", "analysis", "decision", "risk"),
+                                    "use_onchain": False},
 }
 
 
@@ -42,7 +45,7 @@ def block_bootstrap_ci(x: np.ndarray, block: int = 3, reps: int = 2000, alpha: f
 
 
 def _run_policy(name, spec, start, end):
-    rt = faults.make_runtime(selector=spec["selector"], use_phi=spec["use_phi"], use_onchain=spec["use_onchain"])
+    rt = faults.make_runtime(use_phi=spec["use_phi"], phi_features=spec["phi_features"], use_onchain=spec["use_onchain"])
     gross = []
 
     def sample(runtime, t):
@@ -73,8 +76,25 @@ def _run_policy(name, spec, start, end):
         "fees": s["fees_paid"], "funding_paid": s["funding_paid"], "turnover_quote": round(turnover, 2),
         "avg_gross_exposure_over_equity": round(float(np.mean(gross)), 5) if gross else 0.0,
         "cycles": s["cycles"], "abstain_fraction": round(s["cycle_status_counts"].get("abstain", 0) / max(s["cycles"], 1), 4),
-        "phi_calls": (s["phi"] or {}).get("calls", 0), "jev_calls": s["jev"]["calls"], "wall_seconds": round(wall, 1),
-        "risk_latency": s["risk_latency"], "_daily": dict(zip([str(d) for d in days], pnl.tolist()))}
+        "phi_calls": (s["phi"] or {}).get("calls", 0), "phi_tokens_in": (s["phi"] or {}).get("tokens_in_total", 0),
+        "phi_tokens_out": (s["phi"] or {}).get("tokens_out_total", 0), "wall_seconds": round(wall, 1),
+        "decision_isolation": _decision_isolation(rt),
+        "risk_latency": s["risk_watchdog_latency"], "protect_latency_ms": s["protect_cycle_latency_ms"], "decision_latency_ms": s["decision_cycle_latency_ms"], "_daily": dict(zip([str(d) for d in days], pnl.tolist()))}
+
+
+def _decision_isolation(rt) -> dict | None:
+    """Frozen-candidate-set comparison: on the exact sets offered to Phi, what would the deterministic ranker pick?"""
+    plans = {e["payload"]["candidate_id"]: e["payload"] for e in rt.ledger.events("candidate_plan")}
+    recs = [e["payload"] for e in rt.ledger.events("decision_record") if e["payload"]["selector"] == "phi_decision_maker"
+            and e["payload"]["candidate_ids"]]
+    if not recs:
+        return None
+    agree = abstain = 0
+    for r in recs:
+        det = max(r["candidate_ids"], key=lambda c: (D(plans[c]["metrics"]["utility_lcb_quote"]), c))
+        agree += r["selected_id"] == det
+        abstain += r["selected_id"] == "ABSTAIN"
+    return {"decisions": len(recs), "agree_with_deterministic_rank": agree, "phi_abstained": abstain}
 
 
 def run(start_day: int = 8, end_day: int = 30, out_dir: str = "reports") -> dict:
@@ -85,7 +105,7 @@ def run(start_day: int = 8, end_day: int = 30, out_dir: str = "reports") -> dict
     for name, spec in POLICIES.items():
         _rt, results[name] = _run_policy(name, spec, start, end)
     series = faults.fixture()
-    ref = results["C_deterministic"]
+    ref = results["P0_deterministic_baseline"]
     days = list(ref["_daily"])
     # A: cash. B: static long BTC/ETH 50/50 at C's average gross exposure (mid-to-mid, one entry fee each leg).
     expo = ref["avg_gross_exposure_over_equity"]
@@ -105,10 +125,10 @@ def run(start_day: int = 8, end_day: int = 30, out_dir: str = "reports") -> dict
                                                  "avg_gross_exposure_over_equity": expo,
                                                  "_daily": dict(zip(days, bench_pnl.tolist()))}
     comparisons = []
-    for a, b in (("C_deterministic", "A_cash"), ("C_deterministic", "B_exposure_matched_static_long"),
-                 ("D_fake_phi_screen_deterministic_choice", "C_deterministic"),
-                 ("E_fake_phi_plus_fake_jev", "D_fake_phi_screen_deterministic_choice"),
-                 ("E_fake_phi_plus_fake_jev", "F_E_without_onchain")):
+    for a, b in (("P0_deterministic_baseline", "A_cash"), ("P0_deterministic_baseline", "B_exposure_matched_static_long"),
+                 ("P1_phi_screening", "P0_deterministic_baseline"), ("P2_phi_screening_analysis", "P1_phi_screening"),
+                 ("P3_phi_all_four_roles", "P2_phi_screening_analysis"),
+                 ("P3_phi_all_four_roles", "P4_all_four_without_onchain")):
         diff = np.array([results[a]["_daily"].get(d, 0.0) - results[b]["_daily"].get(d, 0.0) for d in days])
         ci = block_bootstrap_ci(diff)
         comparisons.append({"policy": a, "baseline": b, "days": len(diff), "mean_daily_diff": round(float(diff.mean()), 4),
@@ -122,15 +142,16 @@ def run(start_day: int = 8, end_day: int = 30, out_dir: str = "reports") -> dict
         folds.append({"fold": k // 7, "from": seg[0], "to": seg[-1],
                       **{p: round(sum(results[p]["_daily"].get(d, 0.0) for d in seg), 3) for p in results}})
     manifest = {"manifest_id": None, "data": "synthetic_market(seed=7) — SYNTHETIC, not market observations",
-                "models": "FAKE Phi rules + FAKE Jev (max utility LCB); real Phi/Open-Jev not run",
-                "window": [iso(start), iso(end)], "trial_registry": {"policies": list(POLICIES) + ["A_cash", "B_benchmark"],
+                "models": "FAKE rule-based Phi backend for all four roles (its decision_maker reproduces the deterministic "
+                          "ranker by construction); the real local Phi model was not run",
+                "window": [iso(start), iso(end)], "trial_registry": {"policies": list(POLICIES) + ["A_cash", "B_exposure_matched_static_long"],
                                                                      "parameter_sets_per_policy": 1,
                                                                      "parameter_search": "none (config fixed a priori)"},
                 "net_ev_hurdle_quote": cfg["promotion"]["net_ev_hurdle_quote"],
                 "minimum_effective_sample_count": cfg["promotion"]["minimum_effective_sample_count"],
                 "confidence_method": "moving-block bootstrap (block=3 days, 2000 reps, 90%) on paired daily PnL",
                 "promotion_blockers": promotion_blockers(cfg)}
-    report = {"notice": "Harness demonstration on SYNTHETIC data with FAKE model adapters. No alpha, model-quality or "
+    report = {"notice": "Harness demonstration on SYNTHETIC data with a FAKE rule-based Phi backend (token counts are estimates, not tokenizer output). No alpha, model-quality or "
                         "live-readiness claim is made or supported. Promotion is blocked.",
               "manifest": manifest, "policies": {k: {kk: vv for kk, vv in v.items() if kk != "_daily"}
                                                  for k, v in results.items()},
@@ -144,19 +165,24 @@ def run(start_day: int = 8, end_day: int = 30, out_dir: str = "reports") -> dict
 
 def render_md(rep: dict) -> str:
     lines = ["# Ablation evaluation report", "", f"> {rep['notice']}", "", "## Policies", "",
-             "| policy | net PnL | max DD | trades | fees | funding | avg gross/equity | abstain | Phi calls | Jev calls | wall s |",
+             "| policy | net PnL | max DD | trades | fees | funding | avg gross/equity | abstain | Phi calls | Phi tokens in/out | wall s |",
              "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for p in rep["policies"].values():
         lines.append(f"| {p['policy']} | {p.get('net_pnl')} | {p.get('max_drawdown_quote', '-')} | {p.get('trades', '-')} | "
                      f"{p.get('fees', '-')[:8] if isinstance(p.get('fees'), str) else '-'} | "
                      f"{p.get('funding_paid', '-')[:8] if isinstance(p.get('funding_paid'), str) else '-'} | "
                      f"{p.get('avg_gross_exposure_over_equity', '-')} | {p.get('abstain_fraction', '-')} | "
-                     f"{p.get('phi_calls', '-')} | {p.get('jev_calls', '-')} | {p.get('wall_seconds', '-')} |")
+                     f"{p.get('phi_calls', '-')} | {p.get('phi_tokens_in', '-')}/{p.get('phi_tokens_out', '-')} | "
+                     f"{p.get('wall_seconds', '-')} |")
     lines += ["", "## Paired comparisons (daily PnL differences)", "",
               "| policy | vs | days | mean daily diff | 90% block-bootstrap CI | reading |", "|---|---|---:|---:|---|---|"]
     for c in rep["paired_comparisons"]:
         lines.append(f"| {c['policy']} | {c['baseline']} | {c['days']} | {c['mean_daily_diff']} | "
                      f"{c['block_bootstrap_90ci_mean_daily_diff']} | {c['interpretation']} |")
+    lines += ["", "## Decision isolation (same offered candidate sets)", ""]
+    for p in rep["policies"].values():
+        if p.get("decision_isolation"):
+            lines.append(f"- {p['policy']}: {p['decision_isolation']}")
     lines += ["", "## Chronological folds (weekly net PnL)", ""]
     for f in rep["chronological_folds"]:
         lines.append(f"- fold {f['fold']} {f['from']}→{f['to']}: " + ", ".join(

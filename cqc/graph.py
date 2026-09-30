@@ -23,12 +23,40 @@ class GraphMemory:
         self.ledger = ledger
         self.limits = limits
 
-    def add_node(self, node_id: str, node_type: str, record_ref: str, available_at: datetime, summary: str):
+    def add_node(self, node_id: str, node_type: str, record_ref: str, available_at: datetime, summary: str,
+                 content_sha256: str | None = None, ttl_seconds: int | None = None):
         if node_type not in NODE_TYPES:
             raise ValueError(f"unregistered node type {node_type}")
+        expires = iso(available_at + timedelta(seconds=ttl_seconds)) if ttl_seconds else None
         with self.ledger.tx() as db:
-            db.execute("INSERT OR IGNORE INTO graph_nodes(id, type, record_ref, available_at, summary) VALUES (?,?,?,?,?)",
-                       (node_id, node_type, record_ref[:256], iso(available_at), summary[:240] or "-"))
+            db.execute("INSERT OR IGNORE INTO graph_nodes(id, type, record_ref, available_at, summary, content_sha256, "
+                       "expires_at) VALUES (?,?,?,?,?,?,?)",
+                       (node_id, node_type, record_ref[:256], iso(available_at), summary[:240] or "-", content_sha256,
+                        expires))
+
+    def prune(self, now: datetime, protected_ids=()) -> int:
+        """Retention: drop expired nodes, then the oldest nodes beyond the ring-buffer cap. Protected lineage
+        (open orders/positions and their authorizations) is never pruned. Durable audit events are untouched."""
+        protected = set(protected_ids)
+        with self.ledger.tx() as db:
+            rows = db.execute("SELECT id FROM graph_nodes WHERE expires_at IS NOT NULL AND expires_at <= ?",
+                              (iso(now),)).fetchall()
+            doomed = [r["id"] for r in rows if r["id"] not in protected]
+            total = db.execute("SELECT COUNT(*) FROM graph_nodes").fetchone()[0] - len(doomed)
+            excess = total - int(self.limits.get("max_total_nodes", 10 ** 9))
+            if excess > 0:
+                for r in db.execute("SELECT id FROM graph_nodes ORDER BY available_at, id").fetchall():
+                    if excess <= 0:
+                        break
+                    if r["id"] not in protected and r["id"] not in doomed:
+                        doomed.append(r["id"])
+                        excess -= 1
+            for i in range(0, len(doomed), 500):
+                chunk = doomed[i:i + 500]
+                marks = ",".join("?" * len(chunk))
+                db.execute(f"DELETE FROM graph_nodes WHERE id IN ({marks})", chunk)
+                db.execute(f"DELETE FROM graph_edges WHERE src IN ({marks}) OR dst IN ({marks})", chunk + chunk)
+        return len(doomed)
 
     def add_edge(self, src: str, dst: str, edge_type: str, available_at: datetime, evidence_ids=()):
         if edge_type not in EDGE_TYPES:

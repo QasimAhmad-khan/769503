@@ -200,7 +200,7 @@ class RiskEngine:
                 "exposure_room": eq * f("max_gross_notional_over_equity") - exp["gross"],
                 "symbol_room": eq * f("max_symbol_notional_over_equity") - exp["per_symbol"].get(symbol, ZERO),
                 "margin_room": (eq - margin_used) * D(self.r["max_venue_leverage_setting"]),
-                "stress_room": eq * D("0.02") - exp["gross"] * D("0.10")}
+                "stress_room": eq * f("max_stress_loss_fraction") - exp["gross"] * D(self.r["stress_joint_move"])}
 
     def plan_stop_risk_per_contract(self, plan: dict) -> object:
         inst = self.instruments[_key(plan)]
@@ -232,6 +232,8 @@ class RiskEngine:
                     reasons.append("SYMBOL_CONCENTRATION")
                 if value > rooms["margin_room"]:
                     reasons.append("MARGIN")
+                if value * D(self.r["stress_joint_move"]) > rooms["stress_room"]:
+                    reasons.append("STRESS_LIMIT")
         else:
             if self.state == "HALTED":
                 reasons.append("STATE_HALTED")
@@ -243,16 +245,20 @@ class RiskEngine:
                 reasons.append("POSITION_SIDE_MISMATCH")
         return not reasons, reasons
 
-    def authorize(self, plan: dict, receipt: dict, acct: AccountView, now: datetime) -> dict:
+    def authorize(self, plan: dict, decision: dict, acct: AccountView, now: datetime) -> dict:
         """Fresh authorization bound to plan hash, decision, account version and policy version."""
         reasons = []
         if plan_hash(plan) != plan["plan_sha256"]:
             reasons.append("PLAN_HASH_MISMATCH")
-        if receipt["validation_status"] != "valid" or receipt["selected_id"] != plan["candidate_id"]:
+        if decision.get("kind") != "decision_record":
+            reasons.append("LEGACY_DECISION_RECORD")
+        elif decision["candidate_plan_hashes"].get(plan["candidate_id"]) != plan["plan_sha256"]:
+            reasons.append("DECIDED_PLAN_HASH_MISMATCH")
+        if decision["validation_status"] != "valid" or decision["selected_id"] != plan["candidate_id"]:
             reasons.append("DECISION_NOT_SELECTING_PLAN")
-        if receipt["snapshot_id"] != plan["snapshot_id"]:
+        if decision["snapshot_id"] != plan["snapshot_id"]:
             reasons.append("DECISION_SNAPSHOT_MISMATCH")
-        if parse_ts(receipt["expires_at"]) <= now or parse_ts(plan["expires_at"]) <= now:
+        if parse_ts(decision["expires_at"]) <= now or parse_ts(plan["expires_at"]) <= now:
             reasons.append("EXPIRED")
         if plan["account_state_version"] != acct.version:
             reasons.append("ACCOUNT_VERSION_CHANGED")
@@ -264,12 +270,12 @@ class RiskEngine:
         reasons += pre
         inst = self.instruments[_key(plan)]
         per_contract_risk = self.plan_stop_risk_per_contract(plan) if plan["risk_increasing"] else ZERO
-        auth_id = stable_id("auth", plan["plan_sha256"], receipt["decision_id"], acct.version)
+        auth_id = stable_id("auth", plan["plan_sha256"], decision["decision_id"], acct.version)
         rec = contracts.envelope("risk_authorization", stable_id("evt", auth_id), plan["correlation_id"], "risk_engine",
-                                 iso(now), iso(now), min(plan["expires_at"], receipt["expires_at"]), plan["synthetic"])
+                                 iso(now), iso(now), min(plan["expires_at"], decision["expires_at"]), plan["synthetic"])
         qty = D(plan["quantity_contracts"])
         rec.update({"authorization_id": auth_id, "candidate_id": plan["candidate_id"], "plan_sha256": plan["plan_sha256"],
-                    "decision_id": receipt["decision_id"], "account_state_version": acct.version,
+                    "decision_id": decision["decision_id"], "account_state_version": acct.version,
                     "policy_version": plan["policy_version"], "approved": not reasons,
                     "max_quantity_contracts": plan["quantity_contracts"], "price_min": plan["price_min"],
                     "price_max": plan["price_max"], "reserved_stop_risk_quote": dstr(qty * per_contract_risk),
@@ -279,16 +285,52 @@ class RiskEngine:
             rec["expires_at"] = iso(now + timedelta(seconds=1))
         return contracts.validate(rec)
 
-    def submission_check(self, intent: dict, now: datetime) -> tuple[bool, str]:
-        """Revalidated immediately before network send (state may have changed since authorization)."""
-        if intent["purpose"] == "entry":
-            if self.state != "NORMAL":
-                return False, f"STATE_{self.state}"
-            if intent["expires_at"] and parse_ts(intent["expires_at"]) <= now:
-                return False, "AUTHORIZATION_EXPIRED"
-        elif intent["purpose"] == "discretionary_reduce" and self.state == "HALTED":
-            return False, "STATE_HALTED"
-        return True, "OK"
+    def admission_check(self, intent: dict, plan: dict | None, auth: dict | None, acct: AccountView, quote,
+                        now: datetime) -> tuple[bool, list[str]]:
+        """Independent re-validation immediately before a network send, on a FRESH account/market view
+        (positions, equity, marks, reservations excluding this intent's own). Anything changed or
+        unverifiable rejects the entry; protective orders are never blocked here."""
+        if intent["purpose"] == "protective":
+            return True, ["PROTECTIVE"]
+        reasons = []
+        sym = intent["symbol"]
+        inst = self.instruments[sym]
+        if intent["purpose"] == "discretionary_reduce":
+            if self.state == "HALTED":
+                reasons.append("STATE_HALTED")
+            pos = D(acct.positions.get(sym, {}).get("contracts", 0))
+            if D(intent["qty"]) > abs(pos) - acct.pending_reductions.get(sym, ZERO):
+                reasons.append("REDUCTION_EXCEEDS_VERIFIED_POSITION")
+            return not reasons, reasons
+        if self.state != "NORMAL":
+            reasons.append(f"STATE_{self.state}")
+        if intent["expires_at"] and parse_ts(intent["expires_at"]) <= now:
+            reasons.append("AUTHORIZATION_EXPIRED")
+        if plan is None or auth is None:
+            return False, reasons + ["AUTHORIZATION_OR_PLAN_UNVERIFIABLE"]
+        if not auth["approved"] or auth["plan_sha256"] != intent["plan_sha256"] or plan_hash(plan) != intent["plan_sha256"]:
+            reasons.append("AUTHORIZATION_HASH_MISMATCH")
+        if acct.version != auth["account_state_version"]:
+            reasons.append("ACCOUNT_VERSION_CHANGED")
+        auth_equity = intent.get("auth_equity")
+        if auth_equity is None or abs(D(acct.equity) - D(auth_equity)) > D(auth_equity) * D(self.r["admission_equity_tolerance_fraction"]):
+            reasons.append("EQUITY_CHANGED_OR_UNKNOWN")
+        if quote is None or (now - quote["ts"]).total_seconds() > self.r["max_core_quote_age_seconds"]:
+            reasons.append("QUOTE_STALE_OR_MISSING")
+        else:
+            px = quote["ask"] if intent["side"] == "buy" else quote["bid"]
+            if not (D(plan["price_min"]) <= px <= D(plan["price_max"])):
+                reasons.append("PRICE_OUTSIDE_COLLAR")
+        qty = D(intent["qty"])
+        if qty % inst.qty_step != 0 or qty < inst.min_contracts or qty > inst.max_contracts:
+            reasons.append("VENUE_QUANTITY_CONSTRAINT")
+        if qty * inst.multiplier * D(plan["price_min"]) < inst.min_notional:
+            reasons.append("VENUE_MIN_NOTIONAL")
+        if intent["price_limit"] is not None and D(intent["price_limit"]) % inst.price_tick != 0:
+            reasons.append("VENUE_PRICE_TICK")
+        ok, pre = self.precheck(plan, acct)
+        reasons += pre
+        return not reasons, reasons
 
     def latency_summary(self) -> dict:
         if not self.latencies_ms:

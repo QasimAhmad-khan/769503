@@ -1,21 +1,22 @@
 {
-  "notice": "Harness demonstration on SYNTHETIC data with FAKE model adapters. No alpha, model-quality or live-readiness claim is made or supported. Promotion is blocked.",
+  "notice": "Harness demonstration on SYNTHETIC data with a FAKE rule-based Phi backend (token counts are estimates, not tokenizer output). No alpha, model-quality or live-readiness claim is made or supported. Promotion is blocked.",
   "manifest": {
     "manifest_id": null,
     "data": "synthetic_market(seed=7) \u2014 SYNTHETIC, not market observations",
-    "models": "FAKE Phi rules + FAKE Jev (max utility LCB); real Phi/Open-Jev not run",
+    "models": "FAKE rule-based Phi backend for all four roles (its decision_maker reproduces the deterministic ranker by construction); the real local Phi model was not run",
     "window": [
       "2026-01-09T00:00:00Z",
       "2026-01-31T00:00:00Z"
     ],
     "trial_registry": {
       "policies": [
-        "C_deterministic",
-        "D_fake_phi_screen_deterministic_choice",
-        "E_fake_phi_plus_fake_jev",
-        "F_E_without_onchain",
+        "P0_deterministic_baseline",
+        "P1_phi_screening",
+        "P2_phi_screening_analysis",
+        "P3_phi_all_four_roles",
+        "P4_all_four_without_onchain",
         "A_cash",
-        "B_benchmark"
+        "B_exposure_matched_static_long"
       ],
       "parameter_sets_per_policy": 1,
       "parameter_search": "none (config fixed a priori)"
@@ -33,21 +34,21 @@
       "resources.host_ram_budget_gib unmeasured",
       "resources.gpu_vram_budget_gib unmeasured",
       "resources.disk_quota_gib unmeasured",
-      "fake model adapters configured (jev.transport / phi.backend)",
-      "jev.calibration_artifact_id missing (live requires locked calibration)",
+      "fake Phi backend configured (phi.backend)",
       "phi.model_revision unresolved (RESOLVE_AND_PIN)",
       "phi.runtime unresolved (SELECT_AFTER_GPU_DISCOVERY)",
       "phi.quantization unresolved (BENCHMARK_SUPPORTED_4BIT_AGAINST_REFERENCE)",
+      "Phi decision-maker value vs deterministic_rank_v1 not established on real point-in-time data",
       "venue margin rules not configured for a real venue",
       "no real venue selected"
     ]
   },
   "policies": {
-    "C_deterministic": {
-      "policy": "C_deterministic",
+    "P0_deterministic_baseline": {
+      "policy": "P0_deterministic_baseline",
       "config": {
-        "selector": "deterministic",
         "use_phi": false,
+        "phi_features": [],
         "use_onchain": true
       },
       "days": 23,
@@ -65,22 +66,36 @@
       "cycles": 4224,
       "abstain_fraction": 0.9983,
       "phi_calls": 0,
-      "jev_calls": 0,
-      "wall_seconds": 43.1,
+      "phi_tokens_in": 0,
+      "phi_tokens_out": 0,
+      "wall_seconds": 42.8,
+      "decision_isolation": null,
       "risk_latency": {
         "count": 31680,
-        "p50_ms": 0.0373,
-        "p95_ms": 0.0606,
-        "p99_ms": 0.0811,
-        "max_ms": 0.635,
+        "p50_ms": 0.039,
+        "p95_ms": 0.0644,
+        "p99_ms": 0.09,
+        "max_ms": 29.0274,
         "target_p99_ms": 100
+      },
+      "protect_latency_ms": {
+        "p50": 0.162,
+        "p99": 0.334,
+        "max": 29.193
+      },
+      "decision_latency_ms": {
+        "p50": 8.238,
+        "p99": 21.355,
+        "max": 33.52
       }
     },
-    "D_fake_phi_screen_deterministic_choice": {
-      "policy": "D_fake_phi_screen_deterministic_choice",
+    "P1_phi_screening": {
+      "policy": "P1_phi_screening",
       "config": {
-        "selector": "deterministic",
         "use_phi": true,
+        "phi_features": [
+          "evidence"
+        ],
         "use_onchain": true
       },
       "days": 23,
@@ -97,23 +112,38 @@
       "avg_gross_exposure_over_equity": 0.00244,
       "cycles": 4224,
       "abstain_fraction": 0.9983,
-      "phi_calls": 10122,
-      "jev_calls": 0,
-      "wall_seconds": 58.4,
+      "phi_calls": 7123,
+      "phi_tokens_in": 7603706,
+      "phi_tokens_out": 1743888,
+      "wall_seconds": 62.8,
+      "decision_isolation": null,
       "risk_latency": {
         "count": 31680,
-        "p50_ms": 0.0384,
-        "p95_ms": 0.064,
-        "p99_ms": 0.0857,
-        "max_ms": 0.8355,
+        "p50_ms": 0.0398,
+        "p95_ms": 0.0668,
+        "p99_ms": 0.0924,
+        "max_ms": 66.4648,
         "target_p99_ms": 100
+      },
+      "protect_latency_ms": {
+        "p50": 0.166,
+        "p99": 0.344,
+        "max": 66.624
+      },
+      "decision_latency_ms": {
+        "p50": 13.522,
+        "p99": 28.447,
+        "max": 59.749
       }
     },
-    "E_fake_phi_plus_fake_jev": {
-      "policy": "E_fake_phi_plus_fake_jev",
+    "P2_phi_screening_analysis": {
+      "policy": "P2_phi_screening_analysis",
       "config": {
-        "selector": "jev",
         "use_phi": true,
+        "phi_features": [
+          "evidence",
+          "analysis"
+        ],
         "use_onchain": true
       },
       "days": 23,
@@ -130,23 +160,94 @@
       "avg_gross_exposure_over_equity": 0.00244,
       "cycles": 4224,
       "abstain_fraction": 0.9983,
-      "phi_calls": 10122,
-      "jev_calls": 7,
-      "wall_seconds": 58.7,
+      "phi_calls": 7130,
+      "phi_tokens_in": 7610694,
+      "phi_tokens_out": 1744776,
+      "wall_seconds": 63.4,
+      "decision_isolation": null,
       "risk_latency": {
         "count": 31680,
-        "p50_ms": 0.0381,
-        "p95_ms": 0.0628,
-        "p99_ms": 0.0858,
-        "max_ms": 0.7252,
+        "p50_ms": 0.04,
+        "p95_ms": 0.0666,
+        "p99_ms": 0.0894,
+        "max_ms": 1.3796,
         "target_p99_ms": 100
+      },
+      "protect_latency_ms": {
+        "p50": 0.168,
+        "p99": 0.359,
+        "max": 1.525
+      },
+      "decision_latency_ms": {
+        "p50": 14.269,
+        "p99": 30.389,
+        "max": 88.902
       }
     },
-    "F_E_without_onchain": {
-      "policy": "F_E_without_onchain",
+    "P3_phi_all_four_roles": {
+      "policy": "P3_phi_all_four_roles",
       "config": {
-        "selector": "jev",
         "use_phi": true,
+        "phi_features": [
+          "evidence",
+          "analysis",
+          "decision",
+          "risk"
+        ],
+        "use_onchain": true
+      },
+      "days": 23,
+      "final_equity": 9917.5766,
+      "net_pnl": -82.4234,
+      "daily_pnl_mean": -3.5836,
+      "daily_pnl_sd": 10.7776,
+      "max_drawdown_quote": 87.027,
+      "trades": 7,
+      "win_fraction": 0.286,
+      "fees": "3.9994886",
+      "funding_paid": "-0.3019147583217602252406367397578962",
+      "turnover_quote": 7998.98,
+      "avg_gross_exposure_over_equity": 0.00244,
+      "cycles": 4224,
+      "abstain_fraction": 0.9983,
+      "phi_calls": 7137,
+      "phi_tokens_in": 7617134,
+      "phi_tokens_out": 1745028,
+      "wall_seconds": 62.5,
+      "decision_isolation": {
+        "decisions": 7,
+        "agree_with_deterministic_rank": 7,
+        "phi_abstained": 0
+      },
+      "risk_latency": {
+        "count": 31680,
+        "p50_ms": 0.0401,
+        "p95_ms": 0.0661,
+        "p99_ms": 0.0921,
+        "max_ms": 2.0593,
+        "target_p99_ms": 100
+      },
+      "protect_latency_ms": {
+        "p50": 0.17,
+        "p99": 0.36,
+        "max": 2.192
+      },
+      "decision_latency_ms": {
+        "p50": 13.625,
+        "p99": 27.555,
+        "max": 111.772
+      }
+    },
+    "P4_all_four_without_onchain": {
+      "policy": "P4_all_four_without_onchain",
+      "config": {
+        "use_phi": true,
+        "phi_features": [
+          "evidence",
+          "analysis",
+          "decision",
+          "risk"
+        ],
         "use_onchain": false
       },
       "days": 23,
@@ -163,16 +264,32 @@
       "avg_gross_exposure_over_equity": 0.00244,
       "cycles": 4224,
       "abstain_fraction": 0.9983,
-      "phi_calls": 10122,
-      "jev_calls": 7,
-      "wall_seconds": 60.5,
+      "phi_calls": 7137,
+      "phi_tokens_in": 7167594,
+      "phi_tokens_out": 1405758,
+      "wall_seconds": 60.8,
+      "decision_isolation": {
+        "decisions": 7,
+        "agree_with_deterministic_rank": 7,
+        "phi_abstained": 0
+      },
       "risk_latency": {
         "count": 31680,
-        "p50_ms": 0.0392,
-        "p95_ms": 0.0673,
-        "p99_ms": 0.0944,
-        "max_ms": 0.1975,
+        "p50_ms": 0.0406,
+        "p95_ms": 0.0676,
+        "p99_ms": 0.0916,
+        "max_ms": 1.2953,
         "target_p99_ms": 100
+      },
+      "protect_latency_ms": {
+        "p50": 0.172,
+        "p99": 0.369,
+        "max": 2.274
+      },
+      "decision_latency_ms": {
+        "p50": 12.779,
+        "p99": 28.233,
+        "max": 137.941
       }
     },
     "A_cash": {
@@ -187,7 +304,7 @@
   },
   "paired_comparisons": [
     {
-      "policy": "C_deterministic",
+      "policy": "P0_deterministic_baseline",
       "baseline": "A_cash",
       "days": 23,
       "mean_daily_diff": -3.5836,
@@ -199,7 +316,7 @@
       "interpretation": "negative"
     },
     {
-      "policy": "C_deterministic",
+      "policy": "P0_deterministic_baseline",
       "baseline": "B_exposure_matched_static_long",
       "days": 23,
       "mean_daily_diff": -3.855,
@@ -211,8 +328,8 @@
       "interpretation": "negative"
     },
     {
-      "policy": "D_fake_phi_screen_deterministic_choice",
-      "baseline": "C_deterministic",
+      "policy": "P1_phi_screening",
+      "baseline": "P0_deterministic_baseline",
       "days": 23,
       "mean_daily_diff": 0.0,
       "total_diff": 0.0,
@@ -223,8 +340,8 @@
       "interpretation": "inconclusive"
     },
     {
-      "policy": "E_fake_phi_plus_fake_jev",
-      "baseline": "D_fake_phi_screen_deterministic_choice",
+      "policy": "P2_phi_screening_analysis",
+      "baseline": "P1_phi_screening",
       "days": 23,
       "mean_daily_diff": 0.0,
       "total_diff": 0.0,
@@ -235,8 +352,20 @@
       "interpretation": "inconclusive"
     },
     {
-      "policy": "E_fake_phi_plus_fake_jev",
-      "baseline": "F_E_without_onchain",
+      "policy": "P3_phi_all_four_roles",
+      "baseline": "P2_phi_screening_analysis",
+      "days": 23,
+      "mean_daily_diff": 0.0,
+      "total_diff": 0.0,
+      "block_bootstrap_90ci_mean_daily_diff": [
+        0.0,
+        0.0
+      ],
+      "interpretation": "inconclusive"
+    },
+    {
+      "policy": "P3_phi_all_four_roles",
+      "baseline": "P4_all_four_without_onchain",
       "days": 23,
       "mean_daily_diff": 0.0,
       "total_diff": 0.0,
@@ -252,10 +381,11 @@
       "fold": 0,
       "from": "2026-01-09",
       "to": "2026-01-15",
-      "C_deterministic": -10.788,
-      "D_fake_phi_screen_deterministic_choice": -10.788,
-      "E_fake_phi_plus_fake_jev": -10.788,
-      "F_E_without_onchain": -10.788,
+      "P0_deterministic_baseline": -10.788,
+      "P1_phi_screening": -10.788,
+      "P2_phi_screening_analysis": -10.788,
+      "P3_phi_all_four_roles": -10.788,
+      "P4_all_four_without_onchain": -10.788,
       "A_cash": 0.0,
       "B_exposure_matched_static_long": 2.993
     },
@@ -263,10 +393,11 @@
       "fold": 1,
       "from": "2026-01-16",
       "to": "2026-01-22",
-      "C_deterministic": 0.0,
-      "D_fake_phi_screen_deterministic_choice": 0.0,
-      "E_fake_phi_plus_fake_jev": 0.0,
-      "F_E_without_onchain": 0.0,
+      "P0_deterministic_baseline": 0.0,
+      "P1_phi_screening": 0.0,
+      "P2_phi_screening_analysis": 0.0,
+      "P3_phi_all_four_roles": 0.0,
+      "P4_all_four_without_onchain": 0.0,
       "A_cash": 0.0,
       "B_exposure_matched_static_long": 0.237
     },
@@ -274,10 +405,11 @@
       "fold": 2,
       "from": "2026-01-23",
       "to": "2026-01-29",
-      "C_deterministic": -71.635,
-      "D_fake_phi_screen_deterministic_choice": -71.635,
-      "E_fake_phi_plus_fake_jev": -71.635,
-      "F_E_without_onchain": -71.635,
+      "P0_deterministic_baseline": -71.635,
+      "P1_phi_screening": -71.635,
+      "P2_phi_screening_analysis": -71.635,
+      "P3_phi_all_four_roles": -71.635,
+      "P4_all_four_without_onchain": -71.635,
       "A_cash": 0.0,
       "B_exposure_matched_static_long": 1.871
     },
@@ -285,10 +417,11 @@
       "fold": 3,
       "from": "2026-01-30",
       "to": "2026-01-31",
-      "C_deterministic": 0.0,
-      "D_fake_phi_screen_deterministic_choice": 0.0,
-      "E_fake_phi_plus_fake_jev": 0.0,
-      "F_E_without_onchain": 0.0,
+      "P0_deterministic_baseline": 0.0,
+      "P1_phi_screening": 0.0,
+      "P2_phi_screening_analysis": 0.0,
+      "P3_phi_all_four_roles": 0.0,
+      "P4_all_four_without_onchain": 0.0,
       "A_cash": 0.0,
       "B_exposure_matched_static_long": 1.141
     }

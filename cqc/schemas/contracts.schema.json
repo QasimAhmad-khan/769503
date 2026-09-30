@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:quant-crypto:starter-contracts:1.0.0",
-  "title": "QuantDinger/Phi/Jev paper starter contracts",
+  "title": "QuantDinger/Phi paper starter contracts (decision_receipt = legacy Jev-era receipt, read-only; new decisions use decision_record)",
   "description": "Starter boundary contracts, paper-only. Cross-record semantics, authorization and full runtime payloads must be implemented per 01_BUILD_SPEC.md. No schema-valid record is an executable order.",
   "oneOf": [
     {

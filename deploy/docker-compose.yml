@@ -1,34 +1,20 @@
-# Real model services for the paper runtime. UNVERIFIED in the build container (no GPU, no HF egress).
-# Both bind to loopback only. Exactly one Phi process owns the weights (build spec §11).
+# ONE local Phi inference server shared by all four roles (screener, analyzer, decision_maker, risk_analyst).
+# UNVERIFIED in the build container (no GPU, no Hugging Face egress). Binds to loopback only.
+# There is no second model: no Jev/Open-Jev or any other decision service.
 services:
-  open-jev:
-    # Open-Jev 9B (https://github.com/Zefan-Cai/Open-Jev) — serves POST /v1/systemone on :8791.
-    build:
-      context: https://github.com/Zefan-Cai/Open-Jev.git
-      args:
-        JEV_PACKAGE_REPO: ZefanCai/Open-Jev-9B
-        JEV_PACKAGE_REVISION: 47e966881e489511c0c7f5633a9e1960a676a551
-        JEV_BASE_MODEL: Qwen/Qwen3.5-9B
-        JEV_BASE_REVISION: c202236235762e1c871ad0ccb60c8ee5ba337b9a
-    image: open-jev:9b
-    ports: ["127.0.0.1:8791:8791"]
-    deploy:
-      resources:
-        reservations:
-          devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]
-    restart: unless-stopped
-
   phi:
-    # Microsoft Phi-4-mini-instruct behind vLLM's OpenAI-compatible server with structured outputs.
-    # Pin the revision after resolving it (config/paper.json phi.model_revision) and benchmark 4-bit vs reference.
-    image: vllm/vllm-openai:latest   # pin to a tested tag/digest before use
+    # Microsoft Phi-4-mini-instruct (MIT) behind vLLM's OpenAI-compatible server with structured outputs.
+    image: vllm/vllm-openai:${VLLM_TAG:?pin a tested vLLM image tag or digest}
     command: >
       --model microsoft/Phi-4-mini-instruct
       --revision ${PHI_REVISION:?set PHI_REVISION to a pinned commit}
-      --max-model-len 4096 --max-num-seqs 1 --gpu-memory-utilization ${PHI_GPU_UTIL:-0.35}
+      --max-model-len 4096
+      --max-num-seqs 1
+      --gpu-memory-utilization ${PHI_GPU_UTIL:-0.35}
       --host 0.0.0.0 --port 8000
     ports: ["127.0.0.1:8000:8000"]
     deploy:
+      replicas: 1
       resources:
         reservations:
           devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]

@@ -50,13 +50,80 @@ EXTENSION_DEFS = {
         "status": {"enum": ["ok", "error"]}, "output": {"type": ["object", "null"]},
         "output_sha256": {"type": ["string", "null"]}, "error": {"type": ["string", "null"], "maxLength": 256},
     }, ["request_event_id", "tool", "tool_version", "status", "output", "output_sha256", "error"]),
+    # Host-built from connector data (timestamps come from sources, never from the model).
     "evidence_result": _obj("evidence_result", {
-        "request_id": _ID, "status": {"enum": ["complete", "incomplete", "blocked"]},
-        "evidence_ids": {"type": "array", "items": _ID, "maxItems": 16},
+        "request_id": _ID, "round": {"type": "integer", "minimum": 0, "maximum": 1},
+        "status": {"enum": ["complete", "incomplete", "blocked"]},
+        "items": {"type": "array", "maxItems": 8, "items": {"type": "object", "additionalProperties": False, "properties": {
+            "variable": {"type": "string", "minLength": 1, "maxLength": 64}, "evidence_id": {"type": ["string", "null"]},
+            "status": {"enum": ["available", "missing", "stale", "invalidated", "excluded", "declined"]},
+            "source_id": {"type": ["string", "null"], "maxLength": 128},
+            "source_timestamp": {"anyOf": [_TS, {"type": "null"}]}, "observation_timestamp": {"anyOf": [_TS, {"type": "null"}]},
+            "available_at": {"anyOf": [_TS, {"type": "null"}]}, "lag_seconds": {"type": ["number", "null"], "minimum": 0},
+            "unit": {"type": "string", "maxLength": 64}, "quality_flags": {"type": "array", "maxItems": 12,
+                                                                            "items": {"type": "string", "maxLength": 64}},
+            "content_sha256": {"type": ["string", "null"]}, "reason": {"type": ["string", "null"], "maxLength": 256}},
+            "required": ["variable", "evidence_id", "status", "source_id", "source_timestamp", "observation_timestamp",
+                         "available_at", "lag_seconds", "unit", "quality_flags", "content_sha256", "reason"]}},
         "missing_required": {"type": "array", "items": _ID, "maxItems": 8},
         "contradictions": {"type": "array", "items": {"type": "string", "maxLength": 128}, "maxItems": 8},
         "reason_codes": _CODES,
-    }, ["request_id", "status", "evidence_ids", "missing_required", "contradictions", "reason_codes"]),
+    }, ["request_id", "round", "status", "items", "missing_required", "contradictions", "reason_codes"]),
+    # Analyzer -> screener: typed, bounded evidence request (replaces the starter research_request as model output).
+    "evidence_request": _obj("evidence_request", {
+        "request_id": _ID, "hypothesis_id": _ID, "round": {"type": "integer", "minimum": 0, "maximum": 1},
+        "items": {"type": "array", "minItems": 1, "maxItems": 8, "items": {
+            "type": "object", "additionalProperties": False, "properties": {
+                "variable": {"type": "string", "minLength": 1, "maxLength": 64},
+                "symbol": {"type": "string", "minLength": 1, "maxLength": 64},
+                "interval_start": _TS, "interval_end": _TS,
+                "source_class": {"enum": ["venue_market_data", "onchain_finalized"]},
+                "max_age_seconds": {"type": "integer", "minimum": 1, "maximum": 86400},
+                "required": {"type": "boolean"},
+                "relevance": {"type": "string", "minLength": 1, "maxLength": 160}},
+            "required": ["variable", "symbol", "interval_start", "interval_end", "source_class", "max_age_seconds",
+                         "required", "relevance"]}},
+    }, ["request_id", "hypothesis_id", "round", "items"]),
+    # Screener model output: which whitelisted items to fetch; data itself is fetched and stamped by the host.
+    "fetch_plan": _obj("fetch_plan", {
+        "request_id": _ID,
+        "fetch": {"type": "array", "maxItems": 8, "items": {"type": "object", "additionalProperties": False, "properties": {
+            "variable": {"type": "string", "minLength": 1, "maxLength": 64},
+            "source_ids": {"type": "array", "items": _ID, "maxItems": 4},
+            "action": {"enum": ["fetch", "use_cache", "decline"]}},
+            "required": ["variable", "source_ids", "action"]}},
+        "reason_codes": _CODES,
+    }, ["request_id", "fetch", "reason_codes"]),
+    # Decision-maker model output. The host narrows selected_id to an enum of offered IDs + ABSTAIN per call.
+    "decision_choice": _obj("decision_choice", {
+        "selected_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "reason_codes": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"enum": [
+            "EVIDENCE_SUPPORTS", "EVIDENCE_CONFLICT", "INSUFFICIENT_EVIDENCE", "COST_OR_RISK_CONCERN",
+            "PREFER_SMALLER_SIZE", "NO_CANDIDATE_ADEQUATE", "STALE_OR_MISSING_DATA"]}},
+    }, ["selected_id", "reason_codes"]),
+    # Host-built decision record. Generative-model output carries NO probability semantics.
+    "decision_record": _obj("decision_record", {
+        "decision_id": _ID, "snapshot_id": _ID, "candidate_ids": {"type": "array", "items": _ID, "maxItems": 4},
+        "candidate_plan_hashes": {"type": "object", "maxProperties": 4,
+                                  "additionalProperties": {"type": "string", "pattern": "^[a-f0-9]{64}$"}},
+        "selected_id": _ID, "reason_codes": _CODES,
+        "selector": {"enum": ["phi_decision_maker", "deterministic_rank_v1"]},
+        "model_id": {"type": "string", "maxLength": 128}, "model_revision": {"type": "string", "maxLength": 128},
+        "backend_id": {"type": "string", "maxLength": 256}, "prompt_version": {"type": "string", "maxLength": 64},
+        "request_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "raw_response_sha256": {"type": ["string", "null"]},
+        "validation_status": {"enum": ["valid", "invalid", "timeout", "unavailable", "overloaded", "context_rejected",
+                                       "no_candidates"]},
+        "uncalibrated_diagnostics": {"type": ["object", "null"], "maxProperties": 8},
+        "calibrated_selection_probability": {"type": "null"},
+        "calibration_artifact_id": {"type": "null"},
+        "score_semantics": {"const": "none_uncalibrated_generative_choice"},
+        "latency_ms": {"type": "integer", "minimum": 0}, "queue_delay_ms": {"type": "integer", "minimum": 0},
+        "executable_authorization": {"const": False},
+    }, ["decision_id", "snapshot_id", "candidate_ids", "candidate_plan_hashes", "selected_id", "reason_codes", "selector",
+        "model_id", "model_revision", "backend_id", "prompt_version", "request_sha256", "raw_response_sha256",
+        "validation_status", "uncalibrated_diagnostics", "calibrated_selection_probability", "calibration_artifact_id",
+        "score_semantics", "latency_ms", "queue_delay_ms", "executable_authorization"]),
     "analysis_packet": _obj("analysis_packet", {
         "snapshot_id": _ID, "hypothesis_id": _ID, "status": {"enum": ["candidates", "abstain", "blocked"]},
         "tool_result_ids": {"type": "array", "items": _ID, "maxItems": 16},
@@ -69,7 +136,8 @@ EXTENSION_DEFS = {
         "status": {"enum": ["propose", "no_change", "blocked"]},
         "trigger": {"type": "string", "maxLength": 64},
         "position_refs": {"type": "array", "items": _ID, "maxItems": 8},
-        "action_category": {"enum": ["none", "request_stress_test", "tighten_stop", "reduce", "close"]},
+        "action_category": {"enum": ["none", "request_stress_test", "tighten_stop", "reduce", "close",
+                                     "cancel_pending", "move_to_no_new_risk"]},
         "stress_scenarios": {"type": "array", "items": {"enum": ["joint_btc_eth_down_10", "spread_widen_5x",
                                                                    "funding_shock", "delayed_exit_15m"]}, "maxItems": 4},
         "evidence_ids": {"type": "array", "items": _ID, "maxItems": 16}, "reason_codes": _CODES,
@@ -91,10 +159,20 @@ EXTENSION_DEFS = {
 
 # Role-result unions: Phi must return exactly one of these per role.
 ROLE_RESULTS = {
-    "analyzer": ["research_request", "analysis_packet"],
-    "screener": ["tool_request", "evidence_result"],
+    "screener": ["fetch_plan"],
+    "analyzer": ["evidence_request", "analysis_packet"],
+    "decision_maker": ["decision_choice"],
     "risk_analyst": ["adjustment_proposal"],
 }
+ROLES = tuple(ROLE_RESULTS)
+
+# Records written by the superseded Open-Jev selection path (ledgers from commit 1135387 and earlier).
+# They stay readable for audit but are never interpreted as Phi decisions or replay inputs.
+LEGACY_EVENT_KINDS = {"decision_receipt": "legacy_jev_selection_v1", "jev_raw_response": "legacy_jev_raw_response_v1"}
+
+
+def legacy_label(kind: str) -> str | None:
+    return LEGACY_EVENT_KINDS.get(kind)
 
 
 def _load_defs():
@@ -219,6 +297,29 @@ def _graph_errors(r):
     return errs
 
 
+def _decision_record_errors(r):
+    errs = []
+    allowed = set(r["candidate_ids"]) | {ABSTAIN}
+    if r["selected_id"] not in allowed:
+        errs.append("selected_id not in offered set")
+    if set(r["candidate_plan_hashes"]) != set(r["candidate_ids"]):
+        errs.append("candidate_plan_hashes must cover exactly the offered candidates")
+    if r["validation_status"] != "valid" and r["selected_id"] != ABSTAIN:
+        errs.append("non-valid decision must select ABSTAIN")
+    return errs
+
+
+def _evidence_request_errors(r):
+    errs = []
+    cutoff = parse_ts(r["knowledge_cutoff"])
+    for item in r["items"]:
+        if parse_ts(item["interval_start"]) > parse_ts(item["interval_end"]):
+            errs.append(f"{item['variable']}: interval inverted")
+        if parse_ts(item["interval_end"]) > cutoff:
+            errs.append(f"{item['variable']}: interval ends after the decision cutoff")
+    return errs
+
+
 def _auth_errors(r):
     if D(r["price_min"]) > D(r["price_max"]):
         return ["authorization price envelope inverted"]
@@ -226,6 +327,7 @@ def _auth_errors(r):
 
 
 _SEMANTIC = {"evidence": _evidence_errors, "candidate_plan": _candidate_errors, "decision_receipt": _decision_errors,
+             "decision_record": _decision_record_errors, "evidence_request": _evidence_request_errors,
              "graph_slice": _graph_errors, "risk_authorization": _auth_errors}
 
 

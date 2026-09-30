@@ -1,4 +1,6 @@
-# ADR-001: Standalone module with QuantDinger-shaped boundaries; Open-Jev as the decision maker
+# ADR-001: Standalone module with QuantDinger-shaped boundaries
+
+> **Superseded in part by ADR-002 (2026-10-01):** the Open-Jev decision model described below was removed. All four roles now use one local Phi model. The standalone-module and porting decisions still apply.
 
 Date: 2026-09-30. Status: accepted for the paper build.
 
@@ -33,8 +35,8 @@ Date: 2026-09-30. Status: accepted for the paper build.
 | This build | QuantDinger target (per `06_REPO_MAP_AND_SOURCES.md`) | Porting work |
 |---|---|---|
 | `policy.check_entry` | `app/services/ai_decision_filter.py`, `strategy_v2/live_execution.py` | Mode-specific gate. Legacy fail-open behavior stays unchanged outside the mode, with regression tests |
-| `llm/jev.py` | provider layer next to `ai_decision_filter.py` | Candidate-selection adapter. Avoid a second disconnected Jev gate for the same decision |
-| `llm/phi.py` | `app/services/llm.py` | Dedicated local Phi provider with remote fallback disabled for the three roles |
+| `selection.py` (`PhiDecisionSelector`) | next to `ai_decision_filter.py` | Bounded candidate-selection step on the shared local Phi provider. Avoid a second, disconnected gate for the same decision |
+| `llm/phi.py` | `app/services/llm.py` | Dedicated local Phi provider with remote fallback disabled for all four roles |
 | `ledger.py` intents/reservations | `strategy_runtime/order_intents.py`, `pending_orders/order_budget.py` | Add plan hash, decision and authorization references, and atomic account-wide reservations |
 | `execution.py` | `pending_order_worker.py`, `execution_streams/`, `live_trading/funding_reconciliation.py` | Fresh authorization at submission; reconcile `unknown` before retry |
 | `risk.py` | `live_trading/account_risk.py` (audited as unwired) | Wire into production submission and integration-test it |

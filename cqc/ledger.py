@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS intents (intent_id TEXT PRIMARY KEY, client_order_id 
   side TEXT NOT NULL, qty TEXT NOT NULL, price_limit TEXT, stop_price TEXT, order_type TEXT NOT NULL,
   reduce_only INTEGER NOT NULL, status TEXT NOT NULL, venue_order_id TEXT, filled_qty TEXT NOT NULL DEFAULT '0',
   expires_at TEXT, created_ts TEXT NOT NULL, updated_ts TEXT NOT NULL, fencing_token INTEGER NOT NULL,
-  submit_attempts INTEGER NOT NULL DEFAULT 0);
+  submit_attempts INTEGER NOT NULL DEFAULT 0, auth_account_version TEXT, auth_equity TEXT);
 CREATE TABLE IF NOT EXISTS reservations (reservation_id TEXT PRIMARY KEY, intent_id TEXT UNIQUE NOT NULL,
   symbol TEXT NOT NULL, stop_risk_per_contract TEXT NOT NULL, notional_per_contract TEXT NOT NULL,
   qty_reserved TEXT NOT NULL, status TEXT NOT NULL);
@@ -59,12 +59,40 @@ class Ledger:
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
+        self._lock = __import__("threading").RLock()
+        self._migrate()
         self.fail_writes = 0  # fault injection: number of upcoming audit writes that fail
         self._depth = 0
+
+    def _migrate(self):
+        """Additive, idempotent migrations so older ledgers stay readable (never rewritten)."""
+        cols = {r["name"] for r in self.db.execute("PRAGMA table_info(intents)")}
+        for col in ("auth_account_version", "auth_equity"):
+            if col not in cols:
+                self.db.execute(f"ALTER TABLE intents ADD COLUMN {col} TEXT")
+        gcols = {r["name"] for r in self.db.execute("PRAGMA table_info(graph_nodes)")}
+        for col in ("content_sha256", "expires_at"):
+            if col not in gcols:
+                self.db.execute(f"ALTER TABLE graph_nodes ADD COLUMN {col} TEXT")
+
+    def legacy_summary(self) -> dict:
+        """Counts of records written by the superseded Open-Jev path; they are audit-only."""
+        out = {}
+        for kind, label in contracts.LEGACY_EVENT_KINDS.items():
+            n = self.db.execute("SELECT COUNT(*) FROM events WHERE kind=?", (kind,)).fetchone()[0]
+            if n:
+                out[label] = n
+        return out
 
     # ------------------------------------------------------------------ transactions
     @contextmanager
     def tx(self):
+        with self._lock:
+            with self._tx() as db:
+                yield db
+
+    @contextmanager
+    def _tx(self):
         if self._depth:
             self._depth += 1
             try:
@@ -86,6 +114,10 @@ class Ledger:
     # ------------------------------------------------------------------ events
     def append(self, kind: str, payload: dict, ts: datetime, correlation_id: str | None = None,
                event_id: str | None = None) -> str:
+        with self._lock:
+            return self._append(kind, payload, ts, correlation_id, event_id)
+
+    def _append(self, kind, payload, ts, correlation_id, event_id):
         if self.fail_writes > 0:
             self.fail_writes -= 1
             raise AuditWriteError("injected audit persistence failure")
@@ -107,6 +139,16 @@ class Ledger:
             sql, args = sql + " AND correlation_id=?", args + [correlation_id]
         rows = self.db.execute(sql + " ORDER BY seq", args).fetchall()
         return [{**dict(r), "payload": json.loads(r["payload"])} for r in rows]
+
+    TRADING_KINDS = ("candidate_plan", "risk_authorization", "intent_created", "order_ack", "fill", "funding_settlement",
+                     "protective_action", "outcome", "admission_rejected", "order_terminal")
+
+    def trading_digest(self) -> str:
+        """Digest of trading/accounting outputs only (plans, authorizations, orders, fills, funding, outcomes).
+        Model provenance (e.g. live vs replay backend) is deliberately excluded so a replay stays labeled."""
+        kinds = set(self.TRADING_KINDS)
+        rows = self.db.execute("SELECT kind, payload FROM events ORDER BY seq").fetchall()
+        return sha256_hex("\n".join(f"{r['kind']}|{r['payload']}" for r in rows if r["kind"] in kinds))
 
     def event_digest(self, exclude_kinds=("worker_started",)) -> str:
         """Hash over the ordered event stream (used to prove deterministic replay). Wall-clock
@@ -141,7 +183,7 @@ class Ledger:
         self.check_fence(token)
         cols = ("intent_id", "client_order_id", "authorization_id", "candidate_id", "plan_sha256", "purpose",
                 "symbol", "side", "qty", "price_limit", "stop_price", "order_type", "reduce_only", "status",
-                "expires_at", "created_ts", "updated_ts")
+                "expires_at", "created_ts", "updated_ts", "auth_account_version", "auth_equity")
         with self.tx() as db:
             db.execute(f"INSERT INTO intents({','.join(cols)}, fencing_token) VALUES ({','.join('?' * len(cols))},?)",
                        [intent.get(c) for c in cols] + [token])

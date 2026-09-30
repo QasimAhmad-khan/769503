@@ -14,7 +14,8 @@ from .util import D
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = REPO_ROOT / "config" / "paper.json"
 
-JEV_PROVIDERS = {"open_jev", "typesafe", "fake"}
+DECISION_SELECTORS = {"phi", "deterministic_rank_v1"}
+ROLES = {"screener", "analyzer", "decision_maker", "risk_analyst"}
 PHI_BACKENDS = {"openai_compatible", "fake"}
 
 
@@ -53,21 +54,20 @@ def validate(raw: dict) -> None:
     _require(phi["resident_model_processes"] == 1, "exactly one resident Phi process is allowed")
     _require(phi["active_sequences"] == 1, "one active Phi sequence in the paper profile")
     _require(phi["max_output_tokens"] < phi["max_total_tokens"], "output budget must fit in total budget")
-    _require(set(phi["roles"]) == {"screener", "analyzer", "risk_analyst"}, "exactly three Phi roles")
+    _require(set(phi["roles"]) == ROLES, "exactly four Phi roles on one model: screener, analyzer, decision_maker, risk_analyst")
+    _require("jev" not in raw, "Jev/Open-Jev is not a provider in this system; remove the 'jev' section")
     _require(phi.get("backend", "fake") in PHI_BACKENDS, "unknown Phi backend")
 
-    jev = raw["jev"]
-    _require(jev["provider"] in JEV_PROVIDERS, f"jev.provider must be one of {sorted(JEV_PROVIDERS)}")
-    _require(jev.get("transport", "fake") in ("fake", "http"), "jev.transport must be fake or http")
-    if jev.get("transport") == "http":
-        _require(jev["provider"] != "fake", "http transport needs a real provider")
-    _require(1 <= jev["max_trade_candidates"] <= 4, "Jev choice set is at most four candidates plus ABSTAIN")
-    _require(jev["always_include_abstain"] is True, "ABSTAIN must always be offered")
-    _require("latest" not in str(jev["model"]).lower(), "moving 'latest' model aliases are not allowed")
+    dec = raw["decision"]
+    _require(dec["selector"] in DECISION_SELECTORS, f"decision.selector must be one of {sorted(DECISION_SELECTORS)}")
+    _require(1 <= dec["max_trade_candidates"] <= 4, "choice set is at most four candidates plus ABSTAIN")
+    _require(dec["always_include_abstain"] is True, "ABSTAIN must always be offered")
+    _require(dec["calibration_artifact_id"] is None or isinstance(dec["calibration_artifact_id"], str), "bad calibration id")
 
     research = raw["research"]
     _require(research["max_followup_rounds"] <= 1, "at most one follow-up evidence round")
     _require(research["required_evidence_missing"] == "ABSTAIN", "missing required evidence must ABSTAIN")
+    _require(research["max_phi_calls_per_cycle"] >= 1, "bad Phi call budget")
 
     risk = raw["paper_risk"]
     for key in ("max_equity_fraction_at_stop_per_new_trade", "max_aggregate_reserved_stop_risk_fraction",
@@ -110,16 +110,13 @@ def promotion_blockers(cfg) -> list[str]:
     for key in ("host_ram_budget_gib", "gpu_vram_budget_gib", "disk_quota_gib"):
         if cfg["resources"][key] is None:
             blockers.append(f"resources.{key} unmeasured")
-    if cfg["jev"].get("transport", "fake") == "fake" or cfg["phi"].get("backend", "fake") == "fake":
-        blockers.append("fake model adapters configured (jev.transport / phi.backend)")
-    if cfg["jev"].get("calibration_artifact_id") is None:
-        blockers.append("jev.calibration_artifact_id missing (live requires locked calibration)")
+    if cfg["phi"].get("backend", "fake") == "fake":
+        blockers.append("fake Phi backend configured (phi.backend)")
     for key in ("model_revision", "runtime", "quantization"):
         value = str(cfg["phi"][key])
         if value.isupper() or value.startswith("RESOLVE") or value.startswith("SELECT") or value.startswith("BENCHMARK"):
             blockers.append(f"phi.{key} unresolved ({value})")
-    if str(cfg["jev"].get("model_revision", "RESOLVE")).startswith("RESOLVE"):
-        blockers.append("jev.model_revision unpinned")
+    blockers.append("Phi decision-maker value vs deterministic_rank_v1 not established on real point-in-time data")
     if cfg["paper_risk"]["venue_margin_rules"].startswith("REQUIRED"):
         blockers.append("venue margin rules not configured for a real venue")
     if cfg["market"]["venue"] == "SIMULATED":

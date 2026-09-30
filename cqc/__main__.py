@@ -6,8 +6,8 @@
   replay      replay a window and print the run summary (--days, --start-day, --db)
   soak        long replay measuring RSS / DB growth / risk latency -> reports/soak_report.json
   readiness   list live-readiness / promotion blockers (always non-empty in paper mode)
-  check-jev   probe the configured Open-Jev server (/health, /v1/models, one bounded choice request)
-  check-phi   probe the configured Phi OpenAI-compatible server with one analyzer request
+  check-phi   probe the ONE configured local Phi server: one call per role (screener, analyzer,
+              decision_maker, risk_analyst) through the same backend, reporting schema validity and latency
 """
 from __future__ import annotations
 
@@ -40,8 +40,7 @@ def hardware():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="cqc", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["demo", "faults", "evaluate", "replay", "soak", "readiness", "check-jev",
-                                        "check-phi"])
+    ap.add_argument("command", choices=["demo", "faults", "evaluate", "replay", "soak", "readiness", "check-phi"])
     ap.add_argument("--out", default="reports")
     ap.add_argument("--days", type=float, default=3)
     ap.add_argument("--start-day", type=int, default=14)
@@ -65,7 +64,7 @@ def main(argv=None):
                "passed": sum(r["passed"] for r in results), "total": len(results), "results": results}
         (out / "fault_injection.json").write_text(json.dumps(rep, indent=2, default=str))
         md = ["# Fault-injection results", "", f"{rep['passed']}/{rep['total']} scenarios passed "
-              f"({rep['wall_seconds']} s). SYNTHETIC data, FAKE model adapters.", "",
+              f"({rep['wall_seconds']} s). SYNTHETIC data, FAKE rule-based Phi backend.", "",
               "| scenario | injected | expected | observed | pass |", "|---|---|---|---|---|"]
         md += [f"| {r['scenario']} | {r['injected']} | {r['expected']} | {r['observed']} | {'yes' if r['passed'] else 'NO'} |"
                for r in results]
@@ -96,12 +95,12 @@ def main(argv=None):
             if t.minute == 0 and t.hour % 6 == 0:
                 size = Path(db).stat().st_size if db != ":memory:" else None
                 samples.append({"sim_time": t.isoformat(), "rss_max_mib": round(_rss_mib(), 1), "db_bytes": size,
-                                "graph": runtime.graph.counts(), "phi_queue": len(runtime.phi.queue) if runtime.phi else 0})
+                                "graph": runtime.graph.counts(), "phi_queue_depth": runtime.phi.queue.depth() if runtime.phi else 0})
         rt.run(start, start + timedelta(days=days), on_minute=probe)
         summary = {**rt.summary(), "wall_seconds": round(time.perf_counter() - t0, 1), "simulated_days": days,
                    "hardware": hardware(), "rss_max_mib": round(_rss_mib(), 1), "samples": samples,
                    "note": "Simulated-time soak on SYNTHETIC data with FAKE models; the spec's 24h engineering soak "
-                           "must run in wall-clock time against the real Phi/Open-Jev services."}
+                           "must run in wall-clock time against the real local Phi server."}
         if args.command == "soak":
             (out / "soak_report.json").write_text(json.dumps(summary, indent=2, default=str))
         print(json.dumps(summary if args.command == "replay" else {k: v for k, v in summary.items() if k != "samples"},
@@ -116,30 +115,6 @@ def main(argv=None):
                           "blockers": blockers}, indent=2))
         return 1 if blockers else 0
 
-    if args.command == "check-jev":
-        from .config import load_config
-        from .llm.jev import JevSelector, OpenJevTransport
-        from .util import utc
-        cfg = load_config(args.config)
-        tr = OpenJevTransport(cfg["jev"]["api_base_url"], cfg["jev"]["timeout_seconds"])
-        try:
-            models = tr.models()
-        except Exception as exc:  # noqa: BLE001
-            print(json.dumps({"reachable": False, "error": f"{type(exc).__name__}: {exc}",
-                              "hint": "start Open-Jev: see deploy/README.md"}, indent=2))
-            return 2
-        sel = JevSelector(cfg, tr)
-        receipt, raw = sel.select(snapshot_id="probe", hypothesis="connectivity probe (synthetic)",
-                                  facts={"synthetic": True, "trend_class": "positive"},
-                                  candidates=[{"id": "cand_probe", "action": "open_long", "size_class": "full",
-                                               "utility_lcb_quote": "0"}],
-                                  now=utc(2026, 1, 1), correlation_id="probe", ttl_seconds=60)
-        print(json.dumps({"reachable": True, "models": models, "pinned": cfg["jev"]["model"],
-                          "model_listed": cfg["jev"]["model"] in models or "open-jev" in models,
-                          "receipt_status": receipt["validation_status"], "selected": receipt["selected_id"],
-                          "reason_codes": receipt["reason_codes"], "latency_ms": receipt["latency_ms"]}, indent=2))
-        return 0 if receipt["validation_status"] == "valid" else 3
-
     if args.command == "check-phi":
         from .config import load_config
         from .llm.phi import OpenAICompatiblePhiBackend, PhiFailure, PhiService
@@ -147,15 +122,33 @@ def main(argv=None):
         cfg = load_config(args.config)
         svc = PhiService(cfg, OpenAICompatiblePhiBackend(cfg["phi"]["endpoint"], cfg["phi"]["model"],
                                                          cfg["phi"]["model_revision"]))
-        try:
-            out_rec = svc.run("risk_analyst", {"trigger": "connectivity_probe", "state": "NORMAL", "locks": [],
-                                               "position_refs": [], "positions_open": False},
-                              now=utc(2026, 1, 1), correlation_id="probe")
-            print(json.dumps({"ok": True, "result": out_rec, "stats": svc.resource_summary()}, indent=2))
-            return 0
-        except PhiFailure as exc:
-            print(json.dumps({"ok": False, "error": str(exc), "stats": svc.resource_summary()}, indent=2))
-            return 2
+        now = utc(2026, 1, 1)
+        probes = {
+            "risk_analyst": ({"trigger": "connectivity_probe", "state": "NORMAL", "locks": [], "position_refs": [],
+                              "positions_open": False}, None),
+            "decision_maker": ({"snapshot_version": "decision_snapshot_v1", "snapshot_id": "probe", "synthetic": True,
+                                "hypothesis": "connectivity probe", "facts": {}, "candidates": [
+                                    {"id": "cand_probe", "action": "open_long", "size_class": "full",
+                                     "utility_lcb_quote": "0"}], "allowed": ["cand_probe", "ABSTAIN"]}, ["cand_probe"]),
+            "screener": ({"stage": "fetch", "request": {"request_id": "probe", "items": [
+                {"variable": "spread_bps", "symbol": "BTCUSDT-PERP", "interval_start": "2025-12-31T20:00:00Z",
+                 "interval_end": "2026-01-01T00:00:00Z", "source_class": "venue_market_data", "max_age_seconds": 120,
+                 "required": True, "relevance": "probe"}]}, "whitelist": {"spread_bps": ["sim_venue_market_data"]}}, None),
+            "analyzer": ({"stage": "packet", "snapshot_id": "probe", "hypothesis_id": "trend_breakout_v1",
+                          "tool_result_ids": [], "effective_sample_count": 0, "evidence": [],
+                          "candidates": [{"candidate_id": "cand_probe", "action": "OPEN_LONG", "utility_lcb_quote": "0"}]},
+                         None)}
+        results = {}
+        for role, (payload, allowed) in probes.items():
+            try:
+                rec = svc.run(role, payload, now=now, correlation_id="probe", allowed_ids=allowed)
+                results[role] = {"ok": True, "kind": rec["kind"], "producer": rec["producer"]}
+                if role == "decision_maker":
+                    results[role]["selected_in_offered_set"] = rec["selected_id"] in ("cand_probe", "ABSTAIN")
+            except PhiFailure as exc:
+                results[role] = {"ok": False, "status": exc.status, "error": str(exc)[:200]}
+        print(json.dumps({"backend_id": svc.backend_id, "roles": results, "stats": svc.resource_summary()}, indent=2))
+        return 0 if all(r["ok"] for r in results.values()) else 2
     return 1
 
 

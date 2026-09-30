@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "purpose": "paper_research_profile_not_live_limits (derived from 05_PAPER_CONFIG.json; Jev provider switched to local Open-Jev)",
+  "purpose": "paper_research_profile_not_live_limits (derived from 05_PAPER_CONFIG.json; single local Phi model for all four roles)",
   "mode": "paper",
   "live_trading_enabled": false,
   "autonomous_policy": "autonomous_evidence_v1",
@@ -35,33 +35,13 @@
     "roles": [
       "screener",
       "analyzer",
+      "decision_maker",
       "risk_analyst"
     ],
     "backend": "fake",
-    "endpoint": "http://127.0.0.1:8000/v1/chat/completions"
-  },
-  "jev": {
-    "provider": "open_jev",
-    "api_base_url": "http://127.0.0.1:8791/v1",
-    "model": "ZefanCai/Open-Jev-9B",
-    "model_revision": "47e966881e489511c0c7f5633a9e1960a676a551",
-    "base_model": "Qwen/Qwen3.5-9B",
-    "source_repository": "https://github.com/Zefan-Cai/Open-Jev",
-    "verify_model_at_build": true,
-    "timeout_seconds": 8,
-    "max_state_tokens": 2000,
-    "max_trade_candidates": 4,
-    "always_include_abstain": true,
-    "probability_sum_tolerance": 1e-06,
-    "experimental_min_choice_score": null,
-    "api_key_source": "none for loopback Open-Jev; JEV_API_KEY env var only if provider=typesafe",
-    "calibration_artifact_id": null,
-    "live_requires_locked_calibration": true,
-    "prompt_version": "selection_v1",
-    "base_model_revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
-    "request_model_alias": "open-jev",
-    "revision_source": "Open-Jev docker/README.md 9B build args (not re-verified from this container: huggingface.co egress blocked)",
-    "transport": "fake"
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "admission_deadline_seconds": 10,
+    "record_token_logprobs": false
   },
   "research": {
     "max_assets_per_cycle": 2,
@@ -70,11 +50,11 @@
     "max_connector_calls_per_request": 4,
     "max_cycle_seconds": 30,
     "max_phi_calls_per_cycle": 6,
-    "max_jev_calls_per_cycle": 2,
     "on_chain_mode": "forward_capture_until_point_in_time_history_exists",
     "required_evidence_missing": "ABSTAIN",
     "news_enabled": false,
-    "social_enabled": false
+    "social_enabled": false,
+    "onchain_in_backtest": "only_if_historical_availability_proven"
   },
   "paper_risk": {
     "starting_equity_usdt": "10000",
@@ -93,7 +73,11 @@
     "allow_stop_loosening": false,
     "allow_leverage_increase_after_entry": false,
     "venue_margin_rules": "REQUIRED_BEFORE_REAL_VENUE_READINESS",
-    "protective_orders_required_for_real_venue": true
+    "protective_orders_required_for_real_venue": true,
+    "max_stress_loss_fraction": 0.02,
+    "stress_joint_move": "0.10",
+    "admission_equity_tolerance_fraction": "0.001",
+    "protection_timer_seconds": 1
   },
   "graph": {
     "max_hops": 2,
@@ -103,7 +87,9 @@
     "max_tokens_per_context": 2000,
     "store": "existing_postgresql",
     "bulk_numeric_history_in_graph": false,
-    "unbounded_conversation_memory": false
+    "unbounded_conversation_memory": false,
+    "max_total_nodes": 5000,
+    "evidence_ttl_seconds": 86400
   },
   "resources": {
     "host_ram_budget_gib": null,
@@ -200,5 +186,15 @@
       "1.0",
       "0.5"
     ]
+  },
+  "decision": {
+    "selector": "phi",
+    "max_trade_candidates": 4,
+    "always_include_abstain": true,
+    "max_state_tokens": 1500,
+    "prompt_version": "decision_v1",
+    "calibration_artifact_id": null,
+    "probability_policy": "none: generative output is uncalibrated; log-probs diagnostic only",
+    "inspiration": "bounded auditable choice (Jev-inspired design); no Jev/Open-Jev model or service"
   }
 }

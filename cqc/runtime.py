@@ -1,31 +1,38 @@
-"""Paper runtime: continuous protection loop + bounded decision loop over replayed market data.
+"""Paper runtime: independent protection loop + bounded decision loop over replayed market data.
 
-Per 1-minute bar: venue matches → executor reconciles → risk watchdog → deterministic
-protective actions (no model involvement). At each completed 15-minute decision bar: the
-bounded decision cycle (screen → analyzer research request → screener evidence → numerical
-candidates → risk precheck → final snapshot → Jev selection → fresh authorization → atomic
-persistence). Paper/shadow and live would share this exact policy; only the venue transport
-differs.
+Protection (`protect`) — reconcile, risk watchdog, deterministic protective actions — never calls
+a model, holds only the account lock, and can run in its own thread (`cqc.protection.ProtectionLoop`)
+on market/account events and a timer while a Phi call is in flight.
+
+Decision cycle, per completed 15-minute bar and symbol (all model roles are ONE local Phi model):
+  deterministic screen → analyzer EvidenceRequest (typed, bounded) → screener fetch_plan over
+  whitelisted sources → host fetch + point-in-time stamping → ≤1 follow-up round → deterministic
+  forecast/candidates → risk precheck → analyzer AnalysisPacket (subset only) → decision_maker picks one
+  offered ID or ABSTAIN → fresh authorization → policy gate → atomic persistence. At dispatch the
+  risk engine re-validates on a fresh account/market view before any entry is sent.
 """
 from __future__ import annotations
 
+import threading
+import time
 from datetime import datetime, timedelta
 
 import numpy as np
 
-from . import contracts, policy, quant
+from . import policy, quant
 from .contracts import ABSTAIN
 from .execution import Executor
 from .graph import GraphMemory
 from .ledger import AuditWriteError, Ledger, OPEN_STATUSES
-from .llm.jev import FakeJevTransport, JevSelector, OpenJevTransport, candidate_facts
 from .llm.phi import FakePhiBackend, OpenAICompatiblePhiBackend, PhiFailure, PhiService
 from .market import BarSeries, aggregate, instruments_from_config
 from .onchain import ConnectorRegistry, FixtureChainConnector, MarketContextConnector
 from .pit import EvidenceStore, usable
 from .risk import RiskEngine
-from .util import D, ZERO, canonical_json, dstr, iso, stable_id
+from .selection import DeterministicRankSelector, PhiDecisionSelector
+from .util import D, ZERO, canonical_json, dstr, iso, parse_ts, round_price, stable_id
 
+# Registered variables per hypothesis: (variable, required, max_age_seconds)
 HYPOTHESES = {
     "trend_breakout_v1": [
         ("spread_bps", True, 120), ("estimated_funding_rate", True, 120), ("realized_vol_15m", True, 120),
@@ -33,32 +40,28 @@ HYPOTHESES = {
     "funding_crowding_v1": [
         ("estimated_funding_rate", True, 120), ("spread_bps", True, 120), ("realized_vol_15m", True, 120)],
 }
+PHI_FEATURES = ("evidence", "analysis", "decision", "risk")
+
+
+class CycleBudgetExceeded(PhiFailure):
+    status = "overloaded"
 
 
 def make_phi_backend(cfg):
     if cfg["phi"].get("backend", "fake") == "openai_compatible":
-        return OpenAICompatiblePhiBackend(cfg["phi"]["endpoint"], cfg["phi"]["model"], cfg["phi"]["model_revision"])
+        return OpenAICompatiblePhiBackend(cfg["phi"]["endpoint"], cfg["phi"]["model"], cfg["phi"]["model_revision"],
+                                          record_logprobs=cfg["phi"].get("record_token_logprobs", False))
     return FakePhiBackend()
-
-
-def make_jev_transport(cfg):
-    if cfg["jev"].get("transport", "fake") == "http":
-        return OpenJevTransport(cfg["jev"]["api_base_url"], cfg["jev"]["timeout_seconds"])
-    return FakeJevTransport()
-
-
-class DeterministicSelector:
-    """Ablation policy #2/#3: choose the highest utility LCB in code (no Jev)."""
-    provider = "deterministic_max_lcb"
 
 
 class PaperRuntime:
     def __init__(self, cfg, series_1m: dict, *, venue, db_path: str = ":memory:", ledger: Ledger | None = None,
-                 phi_backend=None, jev_transport=None, selector: str = "jev", use_phi: bool = True,
+                 phi_backend=None, phi_features=None, use_phi: bool = True, selector: str | None = None,
                  use_onchain: bool = True, owner: str = "worker-1", synthetic: bool = True, chain=None,
-                 store: EvidenceStore | None = None):
+                 store: EvidenceStore | None = None, mode: str = "replay", record_phi: bool = True):
         self.cfg = cfg
         self.series = series_1m
+        self.mode = mode
         self.instruments = instruments_from_config(cfg)
         self.ledger = ledger or Ledger(db_path)
         self.venue = venue
@@ -71,9 +74,15 @@ class PaperRuntime:
         if use_onchain:
             self.chain = chain or FixtureChainConnector(self.store)
             self.connectors.register(self.chain)
-        self.phi = PhiService(cfg, phi_backend or make_phi_backend(cfg)) if use_phi else None
-        self.selector = selector
-        self.jev = JevSelector(cfg, jev_transport or make_jev_transport(cfg))
+        self.phi_features = set(PHI_FEATURES if phi_features is None else phi_features) if use_phi else set()
+        self.phi = None
+        if self.phi_features:
+            recorder = self._record_phi if record_phi else None
+            self.phi = PhiService(cfg, phi_backend or make_phi_backend(cfg), recorder=recorder)
+        wanted = selector or ("phi" if "decision" in self.phi_features else "deterministic_rank_v1")
+        if wanted == "phi" and self.phi is None:
+            raise ValueError("Phi decision selection requires the Phi service")
+        self.selector = PhiDecisionSelector(cfg, self.phi) if wanted == "phi" else DeterministicRankSelector(cfg)
         self.graph = GraphMemory(self.ledger, cfg["graph"])
         self.bars15 = {}
         for sym, s in series_1m.items():
@@ -84,14 +93,49 @@ class PaperRuntime:
         self.synthetic = synthetic
         self.cycle_log: list[dict] = []
         self.equity_curve: list[tuple] = []
+        self.protect_latency_ms: list[float] = []
+        self.decision_latency_ms: list[float] = []
+        self.account_lock = threading.RLock()
+        self._plans: dict = {}
+        self._auths: dict = {}
+        self._review_pending: str | None = None
+        self._phi_calls_this_cycle = 0
         self.started = False
+
+    # ------------------------------------------------------------------ identity / recording
+    @property
+    def expected_selector(self):
+        return self.selector.name
+
+    @property
+    def expected_backend_id(self):
+        return self.phi.backend_id if isinstance(self.selector, PhiDecisionSelector) else "in-process"
+
+    def _record_phi(self, role, key, text, ident):
+        try:
+            self.ledger.append("phi_raw_response", {"role": role, "request_key": key, "response_text": text,
+                                                    "model_id": ident["model_id"], "revision": ident["revision"]},
+                               self.venue.now or datetime.fromtimestamp(0).astimezone(), "phi")
+        except AuditWriteError:
+            pass  # replay capture is best effort; the decision record itself is mandatory
+
+    def _phi(self, role, payload, now, corr, allowed_ids=None):
+        self._phi_calls_this_cycle += 1
+        if self._phi_calls_this_cycle > self.cfg["research"]["max_phi_calls_per_cycle"]:
+            raise CycleBudgetExceeded("per-cycle Phi call budget exhausted")
+        return self.phi.run(role, payload, now=now, correlation_id=corr, allowed_ids=allowed_ids, synthetic=self.synthetic)
 
     # ------------------------------------------------------------------ lifecycle
     def start(self, now: datetime):
         """Fence ownership, then RECOVERY until account, orders, fills and protection reconcile."""
-        self.executor.start(now)
-        self.risk.set_lock("startup_recovery", "RECOVERY", "restart: reconcile before new entries", now, "auto")
-        self.recover(now)
+        with self.account_lock:
+            self.executor.start(now)
+            legacy = self.ledger.legacy_summary()
+            if legacy:
+                self.ledger.append("legacy_records_detected", {"counts": legacy, "note": "Open-Jev-era records are "
+                                   "audit-only; never replayed or interpreted as Phi decisions"}, now, "ops")
+            self.risk.set_lock("startup_recovery", "RECOVERY", "restart: reconcile before new entries", now, "auto")
+            self.recover(now)
         self.started = True
 
     def recover(self, now: datetime):
@@ -109,7 +153,7 @@ class PaperRuntime:
         self.ledger.append("recovery_complete", {"state": self.risk.state}, now, "ops")
         return True
 
-    # ------------------------------------------------------------------ main loop
+    # ------------------------------------------------------------------ main replay loop
     def run(self, start: datetime, end: datetime, on_minute=None):
         if not self.started:
             self.start(start)
@@ -123,15 +167,16 @@ class PaperRuntime:
         t = start
         while t < end:
             t += timedelta(minutes=1)
-            for s in symbols:
-                while idx[s] < len(bars[s]) and bars[s][idx[s]].end <= t:
-                    self.venue.step(bars[s][idx[s]])
-                    idx[s] += 1
+            with self.account_lock:
+                for s in symbols:
+                    while idx[s] < len(bars[s]) and bars[s][idx[s]].end <= t:
+                        self.venue.step(bars[s][idx[s]])
+                        idx[s] += 1
             self.tick(t + timedelta(seconds=1))
             if int(t.timestamp()) % self.cfg["market"]["decision_bar_seconds"] == 0:
                 for s in symbols:
                     self.decision_cycle(s, t + timedelta(seconds=2))
-                self.executor.dispatch(t + timedelta(seconds=3), self.risk.submission_check)
+                self.dispatch(t + timedelta(seconds=3))
             if on_minute:
                 on_minute(self, t)
         return self
@@ -139,34 +184,65 @@ class PaperRuntime:
     def quote_ts(self):
         return {s: (self.venue.last_bar[s].end if s in self.venue.last_bar else None) for s in self.instruments}
 
-    def tick(self, now: datetime):
-        """Continuous protection loop step: reconcile, watchdog, deterministic protection."""
-        before = self.risk.state
-        rec = self.executor.reconcile(now)
-        self.executor.track_entry_times(now)
-        if rec["discrepancies"]:
-            self.risk.set_lock("reconciliation", "RECOVERY", f"position mismatch {rec['discrepancies']}", now, "auto")
-        elif "reconciliation" in self.risk.locks:
-            self.risk._health("reconciliation", False, now, "RECOVERY", "")
-        if "startup_recovery" in self.risk.locks:
-            self.recover(now)
-        acct = self.executor.account_view(now, self.quote_ts())
-        actions = self.risk.watchdog(acct, now)
-        for a in actions:
-            if a["type"] == "ensure_stop":
-                self.executor.ensure_stop(a["symbol"], self._stop_price(a["symbol"]), now)
-            elif a["type"] in ("reduce", "close"):
-                self.executor.protective_market(a["symbol"], a["qty"], now, a["reason"])
-        if self.risk.state != "NORMAL":  # cancel unsafe working entries (reservation kept until confirmed)
+    def quote(self, sym):
+        bar = self.venue.last_bar.get(sym)
+        if bar is None:
+            return None
+        return {"bid": D(repr(bar.bid)), "ask": D(repr(bar.ask)), "ts": bar.end}
+
+    # ------------------------------------------------------------------ protection (never calls a model)
+    def protect(self, now: datetime) -> list[dict]:
+        t0 = time.perf_counter()
+        with self.account_lock:
+            before = self.risk.state
+            rec = self.executor.reconcile(now)
+            self.executor.track_entry_times(now)
+            if rec["discrepancies"]:
+                self.risk.set_lock("reconciliation", "RECOVERY", f"position mismatch {rec['discrepancies']}", now, "auto")
+            elif "reconciliation" in self.risk.locks:
+                self.risk._health("reconciliation", False, now, "RECOVERY", "")
+            if "startup_recovery" in self.risk.locks:
+                self.recover(now)
+            self._expire_advisory_lock(now)
+            acct = self.executor.account_view(now, self.quote_ts())
+            actions = self.risk.watchdog(acct, now)
+            for a in actions:
+                if a["type"] == "ensure_stop":
+                    self.executor.ensure_stop(a["symbol"], self._stop_price(a["symbol"]), now)
+                elif a["type"] in ("reduce", "close"):
+                    self.executor.protective_market(a["symbol"], a["qty"], now, a["reason"])
+            if self.risk.state != "NORMAL":  # cancel unsafe working entries (reservation kept until confirmed)
+                for it in self.ledger.intents(statuses=["acknowledged", "partially_filled"], purpose="entry"):
+                    self.executor.request_cancel(it["intent_id"], now)
             for it in self.ledger.intents(statuses=["acknowledged", "partially_filled"], purpose="entry"):
-                self.executor.request_cancel(it["intent_id"], now)
-        for it in self.ledger.intents(statuses=["acknowledged", "partially_filled"], purpose="entry"):
-            if it["expires_at"] and it["expires_at"] <= iso(now):
-                self.executor.request_cancel(it["intent_id"], now)  # unfilled remainder of an expired authorization
-        self._outcomes(now)
-        if self.risk.state != before and self.phi is not None:
-            self._risk_analyst(now, f"state_{before}_to_{self.risk.state}", acct)
-        self.equity_curve.append((now, acct.equity))
+                if it["expires_at"] and it["expires_at"] <= iso(now):
+                    self.executor.request_cancel(it["intent_id"], now)
+            if self.risk.state != before:
+                self._review_pending = f"state_{before}_to_{self.risk.state}"
+        self.protect_latency_ms.append((time.perf_counter() - t0) * 1000)
+        return actions
+
+    def tick(self, now: datetime):
+        self.protect(now)
+        with self.account_lock:
+            self._outcomes(now)
+            acct_equity = self.venue.account()["equity"]
+            if now.minute == 0:
+                self.graph.prune(now, self._protected_graph_ids())
+        if self._review_pending and "risk" in self.phi_features:
+            trigger, self._review_pending = self._review_pending, None
+            self._risk_analyst(now, trigger)
+        self.equity_curve.append((now, acct_equity))
+
+    def _protected_graph_ids(self):
+        ids = set()
+        for it in self.ledger.intents(statuses=sorted(OPEN_STATUSES)):
+            ids.update(x for x in (it["candidate_id"], it["authorization_id"]) if x)
+        for sym in self.instruments:
+            c = self.ledger.get(f"last_entry_candidate:{sym}")
+            if c and self.executor.book[sym].contracts != 0:
+                ids.add(c)
+        return ids
 
     def _stop_price(self, sym):
         stored = self.executor.stop_for(sym)
@@ -198,21 +274,96 @@ class PaperRuntime:
                 self.ledger.put(f"realized_flat:{sym}", dstr(pos.realized_pnl))
                 self.executor.remember_stop(sym, None)
 
-    def _risk_analyst(self, now, trigger, acct):
+    # ------------------------------------------------------------------ risk analyst (advisory, validated in code)
+    def _risk_analyst(self, now, trigger):
+        with self.account_lock:
+            acct = self.executor.account_view(now, self.quote_ts())
         payload = {"trigger": trigger, "state": self.risk.state, "locks": sorted(self.risk.locks),
                    "position_refs": [f"pos:{s}" for s, p in acct.positions.items() if D(p["contracts"]) != 0],
                    "positions_open": any(D(p["contracts"]) != 0 for p in acct.positions.values())}
         try:
             proposal = self.phi.run("risk_analyst", payload, now=now, correlation_id="risk", synthetic=self.synthetic)
-            self.ledger.append("adjustment_proposal", proposal, now, "risk")  # advisory only; never executed directly
-        except (PhiFailure, AuditWriteError) as exc:
-            self.ledger.append("risk_analyst_unavailable", {"error": str(exc)[:200]}, now, "risk") if not isinstance(exc, AuditWriteError) else None
+        except PhiFailure as exc:
+            self.ledger.append("risk_analyst_unavailable", {"error": str(exc)[:200]}, now, "risk")
+            return None
+        self.ledger.append("adjustment_proposal", proposal, now, "risk")
+        return self.apply_proposal(proposal, now)
+
+    def apply_proposal(self, proposal: dict, now: datetime) -> dict:
+        """Deterministic validation/application. The model never supplies quantities or prices; only
+        risk-reducing categories exist, bounded by verified positions."""
+        applied, rejected = [], []
+        with self.account_lock:
+            acct = self.executor.account_view(now, self.quote_ts())
+            cat = proposal["action_category"] if proposal["status"] == "propose" else "none"
+            open_syms = {s for s, p in acct.positions.items() if D(p["contracts"]) != 0}
+            refs = {r.replace("pos:", "") for r in proposal["position_refs"]}
+            targets = sorted(refs & open_syms)
+            if refs - open_syms:
+                rejected.append(f"UNKNOWN_POSITION_REFS:{sorted(refs - open_syms)}")
+            if cat == "move_to_no_new_risk":
+                self.risk.set_lock("risk_analyst_advisory", "NO_NEW_RISK", "risk analyst advisory", now, "auto")
+                self.ledger.put("advisory_until", iso(now + timedelta(minutes=15)))
+                applied.append("NO_NEW_RISK_15M")
+            elif cat == "cancel_pending":
+                for it in self.ledger.intents(statuses=["queued", "acknowledged", "partially_filled"], purpose="entry"):
+                    self.executor.request_cancel(it["intent_id"], now)
+                    applied.append(f"CANCEL:{it['intent_id']}")
+            elif cat in ("reduce", "close"):
+                for sym in targets:
+                    pos = abs(D(acct.positions[sym]["contracts"]))
+                    qty = pos if cat == "close" else self.instruments[sym].floor_qty(pos / 2)
+                    if qty > 0 and self.executor.protective_market(sym, qty, now, f"risk_analyst_{cat}"):
+                        applied.append(f"{cat.upper()}:{sym}:{dstr(qty)}")
+            elif cat == "tighten_stop":
+                for sym in targets:
+                    cur, mark = self._stop_price(sym), acct.marks[sym]
+                    long_ = D(acct.positions[sym]["contracts"]) > 0
+                    new = round_price(cur + (mark - cur) / 2, self.instruments[sym].price_tick)
+                    if cur is None or (long_ and not (cur < new < mark)) or (not long_ and not (mark < new < cur)):
+                        rejected.append(f"TIGHTEN_INVALID:{sym}")
+                        continue
+                    self.executor.remember_stop(sym, new)
+                    self.executor.ensure_stop(sym, new, now)
+                    applied.append(f"TIGHTEN:{sym}:{dstr(new)}")
+        result = {"proposal_event_id": proposal["event_id"], "category": proposal["action_category"],
+                  "applied": applied, "rejected": rejected}
+        self.ledger.append("adjustment_applied" if applied else "adjustment_not_applied", result, now, "risk")
+        return result
+
+    def _expire_advisory_lock(self, now):
+        until = self.ledger.get("advisory_until")
+        if until and parse_ts(until) <= now and "risk_analyst_advisory" in self.risk.locks:
+            self.risk.clear_lock("risk_analyst_advisory", now)
+            self.ledger.put("advisory_until", None)
+
+    # ------------------------------------------------------------------ dispatch with fresh admission
+    def dispatch(self, now: datetime):
+        with self.account_lock:
+            return self.executor.dispatch(now, self._admission)
+
+    def _admission(self, intent: dict, now: datetime):
+        if intent["purpose"] == "protective":
+            return True, ["PROTECTIVE"]
+        plan = self._plans.get(intent["plan_sha256"])
+        auth = self._auths.get(intent["authorization_id"])
+        if plan is None or auth is None:  # e.g. after restart: recover from the durable ledger
+            for e in self.ledger.events("candidate_plan"):
+                if e["payload"]["plan_sha256"] == intent["plan_sha256"]:
+                    plan = e["payload"]
+            for e in self.ledger.events("risk_authorization"):
+                if e["payload"]["authorization_id"] == intent["authorization_id"]:
+                    auth = e["payload"]
+        acct = self.executor.account_view(now, self.quote_ts(), exclude_intent=intent["intent_id"])
+        return self.risk.admission_check(intent, plan, auth, acct, self.quote(intent["symbol"]), now)
 
     # ------------------------------------------------------------------ decision cycle
     def decision_cycle(self, sym: str, now: datetime) -> dict:
         corr = stable_id("cycle", sym, iso(now))
         result = {"symbol": sym, "ts": iso(now), "status": "abstain", "reasons": [], "candidates": [], "selected": None,
                   "correlation_id": corr}
+        self._phi_calls_this_cycle = 0
+        t0 = time.perf_counter()
         try:
             self._cycle(sym, now, corr, result)
         except AuditWriteError as exc:
@@ -220,7 +371,12 @@ class PaperRuntime:
             result.update(status="blocked", reasons=result["reasons"] + ["AUDIT_PERSISTENCE_FAILED"])
         except PhiFailure as exc:
             self.risk.set_lock("phi_health", "NO_NEW_RISK", str(exc)[:200], now, "auto")
-            result.update(status="blocked", reasons=result["reasons"] + ["PHI_FAILURE"])
+            result.update(status="blocked", reasons=result["reasons"] + [f"PHI_{exc.status.upper()}"])
+        else:
+            if "phi_health" in self.risk.locks and self._phi_calls_this_cycle:
+                self.risk._health("phi_health", False, now, "NO_NEW_RISK", "")
+        result["phi_calls"] = self._phi_calls_this_cycle
+        self.decision_latency_ms.append((time.perf_counter() - t0) * 1000)
         self.cycle_log.append(result)
         try:
             self.ledger.append("cycle_result", result, now, corr)
@@ -239,13 +395,13 @@ class PaperRuntime:
             return
         closes = np.array([b.close for b in bars])
         feats = quant.features(closes, np.array([b.funding_rate_est for b in bars]), dict(q))
-        last = bars[-1]
-        if last.spread_bps > float(q["max_spread_bps"]):
+        if bars[-1].spread_bps > float(q["max_spread_bps"]):
             result["reasons"].append("SPREAD_TOO_WIDE")
             return
-        acct = self.executor.account_view(now, self.quote_ts())
+        with self.account_lock:
+            acct = self.executor.account_view(now, self.quote_ts())
+            open_entry = self.ledger.intents(statuses=sorted(OPEN_STATUSES), symbol=sym, purpose="entry")
         position = D(acct.positions[sym]["contracts"])
-        open_entry = self.ledger.intents(statuses=sorted(OPEN_STATUSES), symbol=sym, purpose="entry")
         if open_entry:
             result["reasons"].append("ENTRY_ALREADY_PENDING")
             return
@@ -254,25 +410,22 @@ class PaperRuntime:
 
         if position != 0:
             hypothesis = "trend_breakout_v1"
-            evidence = self._acquire(sym, inst, hypothesis, now, corr, result, phi_request=None)
-            if evidence is None:
-                return
-            final_cutoff = now + timedelta(seconds=1)
-            snapshot_id = stable_id("snap", sym, iso(final_cutoff), canonical_json(sorted(evidence)))
+            evidence = self._acquire_deterministic(sym, inst, hypothesis, now, corr, result)
+        else:
+            hypothesis, evidence = self._evidence_dialogue(sym, inst, signals, snapshot_prelim, now, corr, result)
+        if evidence is None:
+            return
+        final_cutoff = now + timedelta(seconds=1)  # snapshot finalized after evidence acquisition
+        snapshot_id = stable_id("snap", sym, iso(final_cutoff), canonical_json(sorted(
+            (k, v["evidence_id"]) for k, v in evidence.items())))
+        ev_ids = [e["evidence_id"] for e in evidence.values() if usable(e)]
+        if position != 0:
             plan = quant.build_close_candidate(cfg=cfg, inst=inst, bars15=bars, cutoff=final_cutoff,
                                                position_contracts=position, feats=feats, snapshot_id=snapshot_id,
-                                               account_version=acct.version, evidence_ids=list(evidence),
+                                               account_version=acct.version, evidence_ids=ev_ids,
                                                correlation_id=corr, synthetic=self.synthetic)
             plans = [plan] if plan else []
         else:
-            hypothesis, phi_request = self._choose_hypothesis(sym, inst, signals, snapshot_prelim, now, corr, result)
-            if hypothesis is None:
-                return
-            evidence = self._acquire(sym, inst, hypothesis, now, corr, result, phi_request)
-            if evidence is None:
-                return
-            final_cutoff = now + timedelta(seconds=1)  # snapshot finalized after evidence acquisition
-            snapshot_id = stable_id("snap", sym, iso(final_cutoff), canonical_json(sorted(evidence)))
             rooms = self.risk.sizing_rooms(acct, sym)
             ctx = quant.SizingContext(acct.equity, rooms["per_trade_budget"], rooms["aggregate_room"],
                                       rooms["exposure_room"], rooms["symbol_room"], rooms["margin_room"],
@@ -281,179 +434,259 @@ class PaperRuntime:
             plans, analysis = quant.build_entry_candidates(
                 cfg=cfg, inst=inst, bars15=bars, cutoff=final_cutoff, hypothesis=hypothesis,
                 direction=signals[hypothesis], feats=feats, ctx=ctx, snapshot_id=snapshot_id,
-                account_version=acct.version, evidence_ids=[e["evidence_id"] for e in evidence.values() if usable(e)],
-                correlation_id=corr, funding_rate=float(funding), synthetic=self.synthetic)
+                account_version=acct.version, evidence_ids=ev_ids, correlation_id=corr, funding_rate=float(funding),
+                synthetic=self.synthetic)
             result["reasons"] += analysis["reason_codes"]
             result["effective_samples"] = analysis.get("forecast", {}).get("effective_samples")
 
-        # deterministic risk precheck -> immutable plans with the precheck outcome bound into the hash
-        checked = []
-        for p in plans:
-            ok, why = self.risk.precheck(p, acct)
-            if ok:  # only prechecked plans become candidates (schema: risk_precheck_passed must be true)
-                checked.append(quant.finalize_precheck(p, True))
-            else:
-                result["reasons"] += why
-        eligible = checked[: cfg["jev"]["max_trade_candidates"]]
-        if eligible and self.phi is not None and position == 0:
-            eligible = self._analyzer_packet(sym, snapshot_id, hypothesis, eligible, evidence, now, corr, result)
+        with self.account_lock:  # deterministic precheck; precheck outcome is bound into the plan hash
+            checked = []
+            for p in plans:
+                ok, why = self.risk.precheck(p, acct)
+                if ok:
+                    checked.append(quant.finalize_precheck(p, True))
+                else:
+                    result["reasons"] += why
+        eligible = checked[: cfg["decision"]["max_trade_candidates"]]
+        if eligible and "analysis" in self.phi_features and position == 0:
+            eligible = self._analyzer_packet(snapshot_id, hypothesis, eligible, evidence, now, corr, result)
         result["candidates"] = [p["candidate_id"] for p in eligible]
         for p in eligible:
+            self._plans[p["plan_sha256"]] = p
             self.ledger.append("candidate_plan", p, now, corr)
             self._graph_candidate(p, evidence, now)
         if not eligible:
             result["reasons"].append("NO_ELIGIBLE_CANDIDATE")
             return
 
-        receipt = self._select(snapshot_id, hypothesis, evidence, eligible, acct, now, corr)
-        result["selected"] = receipt["selected_id"]
-        result["decision_status"] = receipt["validation_status"]
-        if receipt["validation_status"] in ("timeout", "unavailable", "invalid"):
-            self.risk.set_lock("jev_health", "NO_NEW_RISK", f"decision {receipt['validation_status']}", now, "auto")
-        elif "jev_health" in self.risk.locks:
-            self.risk._health("jev_health", False, now, "NO_NEW_RISK", "")
-        if receipt["selected_id"] == ABSTAIN:
-            self.ledger.append("decision_receipt", receipt, now, corr)
-            result["reasons"] += receipt["reason_codes"]
+        facts = {"synthetic": self.synthetic, "required_evidence_complete": True,
+                 **{k: v["value"] for k, v in evidence.items() if usable(v)}}
+        if isinstance(self.selector, PhiDecisionSelector):
+            self._phi_calls_this_cycle += 1
+            if self._phi_calls_this_cycle > cfg["research"]["max_phi_calls_per_cycle"]:
+                raise CycleBudgetExceeded("per-cycle Phi call budget exhausted before decision")
+        decision = self.selector.select(snapshot_id=snapshot_id, hypothesis=hypothesis, facts=facts, plans=eligible,
+                                        equity=acct.equity, now=now, correlation_id=corr,
+                                        ttl_seconds=int(q["plan_ttl_seconds"]), synthetic=self.synthetic,
+                                        **({"cutoff": final_cutoff} if isinstance(self.selector, PhiDecisionSelector) else {}))
+        result["selected"] = decision["selected_id"]
+        result["decision_status"] = decision["validation_status"]
+        if decision["validation_status"] in ("timeout", "unavailable", "invalid", "overloaded", "context_rejected"):
+            self.risk.set_lock("phi_health", "NO_NEW_RISK", f"decision {decision['validation_status']}", now, "auto")
+        if decision["selected_id"] == ABSTAIN:
+            self.ledger.append("decision_record", decision, now, corr)
+            result["reasons"] += decision["reason_codes"]
             return
-        plan = next(p for p in eligible if p["candidate_id"] == receipt["selected_id"])
+        plan = next(p for p in eligible if p["candidate_id"] == decision["selected_id"])
         auth_now = now + timedelta(seconds=1)
-        acct2 = self.executor.account_view(auth_now, self.quote_ts())
-        auth = self.risk.authorize(plan, receipt, acct2, auth_now)
-        expected = self.jev.transport.provider if self.selector == "jev" else DeterministicSelector.provider
-        ok, why = policy.check_entry(cfg=cfg, route="autonomous_cycle", strategy=hypothesis, plan=plan, receipt=receipt,
-                                     audit_ok=self.ledger.fail_writes == 0, now=auth_now, expected_provider=expected)
-        if not auth["approved"] or not ok:
-            self.ledger.append("decision_receipt", receipt, now, corr)
-            self.ledger.append("risk_authorization", auth, auth_now, corr)
-            result.update(status="rejected", reasons=result["reasons"] + auth["reason_codes"] + ([] if ok else [why]))
-            return
-        per_contract = self.risk.plan_stop_risk_per_contract(plan) if plan["risk_increasing"] else ZERO
-        intent_id = self.executor.persist_authorized_entry(plan=plan, receipt=receipt, auth=auth,
-                                                           per_contract_risk=per_contract, now=auth_now,
-                                                           correlation_id=corr)
-        if plan["risk_increasing"]:
-            self.executor.remember_stop(sym, plan["stop_price"])
-            self.ledger.put(f"last_entry_candidate:{sym}", plan["candidate_id"])
-        self.graph.add_node(receipt["decision_id"], "decision", f"events/{receipt['event_id']}", auth_now,
-                            f"selected {receipt['selected_id']}")
-        self.graph.add_edge(receipt["decision_id"], plan["candidate_id"], "selected", auth_now)
-        self.graph.add_node(auth["authorization_id"], "policy", f"events/{auth['event_id']}", auth_now, "risk authorization")
+        with self.account_lock:  # fresh authorization + gate + atomic persistence
+            acct2 = self.executor.account_view(auth_now, self.quote_ts())
+            auth = self.risk.authorize(plan, decision, acct2, auth_now)
+            ok, why = policy.check_entry(cfg=cfg, route="autonomous_cycle", strategy=hypothesis, plan=plan,
+                                         decision=decision, audit_ok=self.ledger.fail_writes == 0, now=auth_now,
+                                         expected_selector=self.expected_selector,
+                                         expected_backend_id=self.expected_backend_id)
+            if not auth["approved"] or not ok:
+                self.ledger.append("decision_record", decision, now, corr)
+                self.ledger.append("risk_authorization", auth, auth_now, corr)
+                result.update(status="rejected", reasons=result["reasons"] + auth["reason_codes"] + ([] if ok else [why]))
+                return
+            per_contract = self.risk.plan_stop_risk_per_contract(plan) if plan["risk_increasing"] else ZERO
+            self._auths[auth["authorization_id"]] = auth
+            intent_id = self.executor.persist_authorized_entry(plan=plan, decision=decision, auth=auth,
+                                                               per_contract_risk=per_contract, now=auth_now,
+                                                               correlation_id=corr, auth_equity=acct2.equity)
+            if plan["risk_increasing"]:
+                self.executor.remember_stop(sym, plan["stop_price"])
+                self.ledger.put(f"last_entry_candidate:{sym}", plan["candidate_id"])
+        ttl = self.cfg["graph"]["evidence_ttl_seconds"] * 7
+        self.graph.add_node(decision["decision_id"], "decision", f"events/{decision['event_id']}", auth_now,
+                            f"{decision['selector']} selected {decision['selected_id']}", decision["request_sha256"], ttl)
+        self.graph.add_edge(decision["decision_id"], plan["candidate_id"], "selected", auth_now)
+        self.graph.add_node(auth["authorization_id"], "policy", f"events/{auth['event_id']}", auth_now,
+                            "risk authorization", None, ttl)
         self.graph.add_edge(plan["candidate_id"], auth["authorization_id"], "authorized_by", auth_now)
         result.update(status="authorized", intent_id=intent_id, authorization_id=auth["authorization_id"],
-                      snapshot_id=snapshot_id)
+                      snapshot_id=snapshot_id, decision_id=decision["decision_id"])
 
-    # ------------------------------------------------------------------ cycle helpers
-    def _choose_hypothesis(self, sym, inst, signals, snapshot_prelim, now, corr, result):
-        registry = []
-        for hyp, feats in HYPOTHESES.items():
-            spec = []
-            for feature, required, max_age in feats:
-                if feature.startswith("chain_") and not self.use_onchain:
-                    continue
-                spec.append({"feature": feature, "unit": self.connectors.unit(feature) or "unknown", "required": required,
-                             "max_age_seconds": max_age, "approved_source_ids": self.connectors.approved(feature) or ["none"]})
-            registry.append({"hypothesis_id": hyp, "signal_direction": signals[hyp], "features": spec})
-        if self.phi is None:
-            hyp = next((h for h in registry if h["signal_direction"] != 0), None)
+    # ------------------------------------------------------------------ evidence dialogue
+    def _variables(self, hypothesis):
+        out = []
+        replay = self.mode == "replay"
+        for var, required, max_age in HYPOTHESES[hypothesis]:
+            cls = self.connectors.source_class(var)
+            if cls is None:  # no connector registered for this variable (e.g. on-chain ablation)
+                if required:
+                    out.append({"variable": var, "source_class": "venue_market_data", "required": True,
+                                "max_age_seconds": max_age, "sources": [], "excluded": "no_connector"})
+                continue
+            sources = self.connectors.approved(var, cls, replay=replay)
+            excluded = None if sources or not self.connectors.approved(var, cls) else "historical_availability_unproven"
+            out.append({"variable": var, "source_class": cls, "required": required, "max_age_seconds": max_age,
+                        "sources": sources, "excluded": excluded})
+        return out
+
+    def _evidence_dialogue(self, sym, inst, signals, snapshot_prelim, now, corr, result):
+        registry = {h: self._variables(h) for h in HYPOTHESES}
+        if "evidence" not in self.phi_features:
+            hyp = next((h for h in HYPOTHESES if signals[h] != 0), None)
             if hyp is None:
                 result["reasons"].append("NO_REGISTERED_SIGNAL")
                 return None, None
-            return hyp["hypothesis_id"], {"features": hyp["features"]}
+            return hyp, self._acquire_deterministic(sym, inst, hyp, now, corr, result)
+        interval_start = iso(now - timedelta(hours=4))
         payload = {"stage": "request", "snapshot_id": snapshot_prelim, "request_id": stable_id("req", snapshot_prelim),
-                   "instrument": inst.contract_dict(), "horizon_seconds": self.cfg["market"]["forecast_horizon_seconds"],
-                   "cutoff": iso(now), "hypotheses": registry}
-        out = self.phi.run("analyzer", payload, now=now, correlation_id=corr, key=f"analyzer:{snapshot_prelim}",
-                           synthetic=self.synthetic)
+                   "symbol": inst.symbol, "cutoff": iso(now), "interval_start": interval_start,
+                   "hypotheses": [{"hypothesis_id": h, "signal_direction": signals[h],
+                                   "variables": [{k: v[k] for k in ("variable", "source_class", "required",
+                                                                    "max_age_seconds")} for v in registry[h]
+                                                 if not v["excluded"]]} for h in HYPOTHESES]}
+        out = self._phi("analyzer", payload, now, corr)
         self.ledger.append(out["kind"], out, now, corr)
-        if out["kind"] != "research_request":
+        if out["kind"] != "evidence_request":
             result["reasons"] += out["reason_codes"]
             return None, None
-        # host-side semantic validation: the model cannot choose another instrument, unregistered features or sources
-        allowed = {h["hypothesis_id"]: h for h in registry}
-        hyp = allowed.get(out["hypothesis_id"])
-        if hyp is None or out["instrument"] != inst.contract_dict():
-            result["reasons"].append("RESEARCH_REQUEST_OUT_OF_SCOPE")
+        hyp = out["hypothesis_id"]
+        if hyp not in HYPOTHESES or signals[hyp] == 0:
+            result["reasons"].append("EVIDENCE_REQUEST_HYPOTHESIS_NOT_PERMITTED")
             return None, None
-        registered = {f["feature"]: f for f in hyp["features"]}
-        for f in out["features"]:
-            reg = registered.get(f["feature"])
-            if reg is None or not set(f["approved_source_ids"]) <= set(reg["approved_source_ids"]):
-                result["reasons"].append("RESEARCH_REQUEST_UNREGISTERED_FEATURE_OR_SOURCE")
-                return None, None
-        missing_required = [f for f in hyp["features"] if f["required"] and f["feature"] not in {x["feature"] for x in out["features"]}]
-        feats = out["features"] + missing_required  # required features are host policy, not model choice
-        if hyp["signal_direction"] == 0:
-            result["reasons"].append("HYPOTHESIS_SIGNAL_NEUTRAL")
+        reg = {v["variable"]: v for v in registry[hyp]}
+        blocked = [v for v, r in reg.items() if r["required"] and r["excluded"]]
+        if blocked:  # a required variable has no admissible source: abstain, never substitute
+            result["reasons"] += ["REQUIRED_EVIDENCE_MISSING"] + [f"REQUIRED_VARIABLE_EXCLUDED:{v}" for v in blocked]
+            result["missing"] = blocked
             return None, None
-        return out["hypothesis_id"], {"features": feats, "request": out}
-
-    def _acquire(self, sym, inst, hypothesis, now, corr, result, phi_request):
-        """Evidence acquisition: caches first, then approved connectors; at most one follow-up round."""
-        spec = phi_request["features"] if phi_request else [
-            {"feature": f, "required": r, "max_age_seconds": a, "approved_source_ids": self.connectors.approved(f)}
-            for f, r, a in HYPOTHESES[hypothesis] if self.use_onchain or not f.startswith("chain_")]
-        budget = min(self.cfg["research"]["max_connector_calls_per_request"], 4)
-        calls_before = self.connectors.calls
-        features_to_fetch, sources = [f["feature"] for f in spec], sorted({s for f in spec for s in f["approved_source_ids"]})
-        if self.phi is not None and phi_request is not None:
-            req = phi_request.get("request")
-            payload = {"stage": "retrieve", "request": {"request_id": req["request_id"] if req else "req",
-                                                        "features": [{**f, "cached": False} for f in spec]}}
-            tr = self.phi.run("screener", payload, now=now, correlation_id=corr, key=f"screener:{corr}", synthetic=self.synthetic)
-            self.ledger.append("tool_request", tr, now, corr)
-            if tr["kind"] != "tool_request" or tr["tool"] != "retrieve_evidence_batch":
-                result["reasons"].append("SCREENER_TOOL_NOT_ALLOWLISTED")
-                return None
-            wanted = set(tr["arguments"].get("features", []))
-            approved = {s for f in spec for s in f["approved_source_ids"]}
-            if not wanted <= {f["feature"] for f in spec} or not set(tr["arguments"].get("source_ids", [])) <= approved:
-                result["reasons"].append("SCREENER_REQUEST_OUT_OF_SCOPE")
-                return None
-            features_to_fetch = [f for f in features_to_fetch if f in wanted]
+        reg = {v: r for v, r in reg.items() if not r["excluded"]}
         evidence = {}
+        request = out
         for round_no in range(1 + self.cfg["research"]["max_followup_rounds"]):
-            for f in spec:
-                if f["feature"] in evidence and usable(evidence[f["feature"]]):
-                    continue
-                cached = self.store.as_of(f["feature"], inst.contract_dict(), now, f["max_age_seconds"], corr)
-                if not usable(cached) and f["feature"] in features_to_fetch and self.connectors.calls - calls_before < budget:
-                    self.connectors.retrieve(f["feature"], inst.contract_dict(), now, f["approved_source_ids"], corr)
-                    cached = self.store.as_of(f["feature"], inst.contract_dict(), now, f["max_age_seconds"], corr)
-                evidence[f["feature"]] = cached
-            if all(usable(evidence[f["feature"]]) for f in spec if f["required"]):
+            problems = self._validate_request(request, reg, inst, now)
+            if problems:
+                result["reasons"] += problems
+                return None, None
+            wl = {i["variable"]: reg[i["variable"]]["sources"] for i in request["items"]}
+            plan = self._phi("screener", {"stage": "fetch", "request": {k: request[k] for k in ("request_id", "items")},
+                                          "whitelist": wl}, now, corr)
+            self.ledger.append("fetch_plan", plan, now, corr)
+            bad = [f for f in plan["fetch"] if f["variable"] not in wl or not set(f["source_ids"]) <= set(wl[f["variable"]])]
+            if bad:
+                result["reasons"].append("SCREENER_REQUESTED_NON_WHITELISTED_SOURCE")
+                return None, None
+            self._fetch(inst, request, plan, reg, evidence, now, corr)
+            ev_result = self._evidence_result(request, reg, evidence, now, corr, round_no)
+            self.ledger.append("evidence_result", ev_result, now, corr)
+            missing = [v for v, r in reg.items() if r["required"] and not usable(evidence.get(v, {"status": "missing",
+                                                                                                 "value": None}))]
+            if not missing:
                 break
-            features_to_fetch = [f["feature"] for f in spec if f["required"] and not usable(evidence[f["feature"]])]
-        missing = [f["feature"] for f in spec if f["required"] and not usable(evidence[f["feature"]])]
-        if self.phi is not None and phi_request is not None:
-            payload = {"stage": "conclude", "request": {"request_id": (phi_request.get("request") or {}).get("request_id", "req")},
-                       "evidence": [{"feature": k, "evidence_id": v["evidence_id"], "usable": usable(v),
-                                     "required": next(f["required"] for f in spec if f["feature"] == k)} for k, v in evidence.items()]}
-            er = self.phi.run("screener", payload, now=now, correlation_id=corr, key=f"screener2:{corr}", synthetic=self.synthetic)
-            self.ledger.append(er["kind"], er, now, corr)
-            if er["kind"] == "evidence_result" and not set(er["evidence_ids"]) <= {v["evidence_id"] for v in evidence.values()}:
-                result["reasons"].append("SCREENER_CITED_UNKNOWN_EVIDENCE")
-                return None
-        for e in evidence.values():
+            if round_no >= self.cfg["research"]["max_followup_rounds"]:
+                result["reasons"].append("REQUIRED_EVIDENCE_MISSING")
+                result["missing"] = missing
+                return None, None
+            follow = self._phi("analyzer", {"stage": "followup", "snapshot_id": snapshot_prelim,
+                                            "request_id": stable_id("req1", snapshot_prelim), "hypothesis_id": hyp,
+                                            "symbol": inst.symbol, "cutoff": iso(now), "interval_start": interval_start,
+                                            "missing_required": missing,
+                                            "variables": [{k: v[k] for k in ("variable", "source_class", "required",
+                                                                             "max_age_seconds")} for v in reg.values()]},
+                               now, corr)
+            self.ledger.append(follow["kind"], follow, now, corr)
+            if follow["kind"] != "evidence_request" or follow["round"] != 1:
+                result["reasons"] += ["REQUIRED_EVIDENCE_MISSING"] + list(follow.get("reason_codes", []))
+                result["missing"] = missing
+                return None, None
+            request = follow
+        return hyp, evidence
+
+    def _validate_request(self, req, reg, inst, now) -> list[str]:
+        errs = []
+        for item in req["items"]:
+            r = reg.get(item["variable"])
+            if r is None:
+                errs.append("UNREGISTERED_VARIABLE")
+            elif r["excluded"]:
+                errs.append(f"VARIABLE_EXCLUDED_{r['excluded'].upper()}")
+            elif item["source_class"] != r["source_class"]:
+                errs.append("SOURCE_CLASS_MISMATCH")
+            if item["symbol"] != inst.symbol:
+                errs.append("SYMBOL_OUT_OF_SCOPE")
+            if parse_ts(item["interval_end"]) > now:
+                errs.append("INTERVAL_AFTER_CUTOFF")
+        return sorted(set(errs))
+
+    def _fetch(self, inst, request, plan, reg, evidence, now, corr):
+        budget = self.cfg["research"]["max_connector_calls_per_request"]
+        calls0 = self.connectors.calls
+        actions = {f["variable"]: f for f in plan["fetch"]}
+        for item in request["items"]:
+            var = item["variable"]
+            max_age = min(item["max_age_seconds"], reg[var]["max_age_seconds"])
+            cached = self.store.as_of(var, inst.contract_dict(), now, max_age, corr)
+            act = actions.get(var, {"action": "decline", "source_ids": []})
+            if not usable(cached) and act["action"] == "fetch" and self.connectors.calls - calls0 < budget:
+                self.connectors.retrieve(var, inst.contract_dict(), now, act["source_ids"], corr)
+                cached = self.store.as_of(var, inst.contract_dict(), now, max_age, corr)
+            evidence[var] = cached
+            if usable(cached):
+                self._graph_evidence(cached)
+
+    def _evidence_result(self, request, reg, evidence, now, corr, round_no):
+        items = []
+        for item in request["items"]:
+            e = evidence.get(item["variable"])
+            if e is None:
+                continue
+            avail = e["available_at"] if e["status"] != "missing" else None
+            items.append({"variable": item["variable"], "evidence_id": e["evidence_id"],
+                          "status": e["status"] if e["status"] in ("available", "missing", "stale", "invalidated") else "missing",
+                          "source_id": e["source_id"], "source_timestamp": e["event_time"] if avail else None,
+                          "observation_timestamp": e["observed_at"] if avail else None, "available_at": avail,
+                          "lag_seconds": (parse_ts(e["available_at"]) - parse_ts(e["event_time"])).total_seconds()
+                          if avail else None, "unit": e["unit"], "quality_flags": list(e["quality_flags"]),
+                          "content_sha256": e["content_sha256"], "reason": e["reason"]})
+        missing = [v for v, r in reg.items() if r["required"] and not usable(evidence.get(v, {"status": "missing",
+                                                                                             "value": None}))]
+        from .contracts import envelope
+        rec = envelope("evidence_result", stable_id("evt_er", corr, round_no, iso(now)), corr, "host:screener_fetch",
+                       iso(now), iso(now), iso(now + timedelta(minutes=5)), self.synthetic)
+        rec.update({"request_id": request["request_id"], "round": round_no,
+                    "status": "complete" if not missing else "incomplete", "items": items[:8],
+                    "missing_required": missing[:8], "contradictions": [],
+                    "reason_codes": ["REQUIRED_EVIDENCE_COMPLETE"] if not missing else ["REQUIRED_EVIDENCE_MISSING"]})
+        return rec
+
+    def _acquire_deterministic(self, sym, inst, hypothesis, now, corr, result):
+        """No-Phi evidence path (baseline and position management): same registry, same PIT rules."""
+        evidence = {}
+        replay = self.mode == "replay"
+        for var, required, max_age in HYPOTHESES[hypothesis]:
+            cls = self.connectors.source_class(var)
+            sources = self.connectors.approved(var, cls, replay=replay) if cls else []
+            e = self.store.as_of(var, inst.contract_dict(), now, max_age, corr)
+            if not usable(e) and sources:
+                self.connectors.retrieve(var, inst.contract_dict(), now, sources, corr)
+                e = self.store.as_of(var, inst.contract_dict(), now, max_age, corr)
+            if cls is None and not required:
+                continue
+            evidence[var] = e
             if usable(e):
-                self.graph.add_node(e["evidence_id"], "evidence", f"evidence/{e['evidence_id']}",
-                                    datetime.fromisoformat(e["available_at"].replace("Z", "+00:00")),
-                                    f"{e['feature']}={e['value']} {e['unit']} ({e['source_id']})")
+                self._graph_evidence(e)
+        missing = [v for v, r, _ in HYPOTHESES[hypothesis] if r and not usable(evidence.get(v, {"status": "missing",
+                                                                                              "value": None}))]
         if missing:
             result["reasons"].append("REQUIRED_EVIDENCE_MISSING")
             result["missing"] = missing
             return None
         return evidence
 
-    def _analyzer_packet(self, sym, snapshot_id, hypothesis, eligible, evidence, now, corr, result):
+    def _analyzer_packet(self, snapshot_id, hypothesis, eligible, evidence, now, corr, result):
         payload = {"stage": "packet", "snapshot_id": snapshot_id, "hypothesis_id": hypothesis,
                    "tool_result_ids": [f"features_v1:{snapshot_id}", f"empirical_forecast_v1:{snapshot_id}"],
-                   "effective_sample_count": eligible[0]["metrics"]["effective_sample_count"], "missing": [],
-                   "evidence": [{"feature": k, "value": v["value"], "contradiction": False} for k, v in evidence.items()],
-                   "candidates": [{"candidate_id": p["candidate_id"], "eligible": True, "action": p["action"],
+                   "effective_sample_count": eligible[0]["metrics"]["effective_sample_count"],
+                   "evidence": [{"variable": k, "value": v["value"], "contradiction": False} for k, v in evidence.items()],
+                   "candidates": [{"candidate_id": p["candidate_id"], "action": p["action"],
                                    "utility_lcb_quote": p["metrics"]["utility_lcb_quote"]} for p in eligible]}
-        packet = self.phi.run("analyzer", payload, now=now, correlation_id=corr, key=f"packet:{snapshot_id}",
-                              synthetic=self.synthetic)
+        packet = self._phi("analyzer", payload, now, corr)
         self.ledger.append(packet["kind"], packet, now, corr)
         if packet["kind"] != "analysis_packet":
             result["reasons"].append("ANALYZER_WRONG_RESULT_KIND")
@@ -464,41 +697,16 @@ class PaperRuntime:
             return []
         return [p for p in eligible if p["candidate_id"] in ids]
 
-    def _select(self, snapshot_id, hypothesis, evidence, eligible, acct, now, corr):
-        ttl = int(self.cfg["quant"]["plan_ttl_seconds"])
-        if self.selector == "deterministic":
-            best = max(eligible, key=lambda p: (D(p["metrics"]["utility_lcb_quote"]), p["candidate_id"]))
-            receipt = contracts.envelope("decision_receipt", stable_id("evt_dec", snapshot_id, "det"), corr,
-                                         "deterministic_selector", iso(now), iso(now), iso(now + timedelta(seconds=ttl)),
-                                         self.synthetic)
-            probs = {ABSTAIN: 0.0, **{p["candidate_id"]: (1.0 if p is best else 0.0) for p in eligible}}
-            receipt.update({"decision_id": stable_id("dec", snapshot_id, "det"), "snapshot_id": snapshot_id,
-                            "candidate_ids": [p["candidate_id"] for p in eligible], "selected_id": best["candidate_id"],
-                            "provider": DeterministicSelector.provider, "model_revision": "code:max_lcb_v1",
-                            "prompt_version": "none", "request_sha256": stable_id("x", snapshot_id)[2:].ljust(64, "0")[:64],
-                            "raw_response_sha256": "0" * 64, "choice_probabilities": probs, "provider_confidence": 1.0,
-                            "score_semantics": "categorical_preference_not_win_probability",
-                            "validation_status": "valid", "reason_codes": ["DETERMINISTIC_MAX_LCB"], "latency_ms": 0,
-                            "executable_authorization": False})
-            return contracts.validate(receipt)
-        facts = {"synthetic": self.synthetic, "required_evidence_complete": True}
-        for k, v in evidence.items():
-            if usable(v):
-                facts[k] = v["value"]
-        sizes = {p["candidate_id"]: ("full" if i == 0 else "reduced") for i, p in enumerate(
-            sorted(eligible, key=lambda p: -D(p["quantity_contracts"])))}
-        cands = [candidate_facts(p, acct.equity, sizes[p["candidate_id"]]) for p in eligible]
-        receipt, raw = self.jev.select(snapshot_id=snapshot_id, hypothesis=hypothesis, facts=facts, candidates=cands,
-                                       now=now, correlation_id=corr, ttl_seconds=ttl, synthetic=self.synthetic)
-        if raw is not None:  # bounded raw response retained for replay and audit
-            self.ledger.append("jev_raw_response", {"request_sha256": receipt["request_sha256"],
-                                                    "response_text": raw[:4096]}, now, corr)
-        return receipt
+    def _graph_evidence(self, e):
+        self.graph.add_node(e["evidence_id"], "evidence", f"evidence/{e['evidence_id']}", parse_ts(e["available_at"]),
+                            f"{e['feature']}={e['value']} {e['unit']} ({e['source_id']})", e["content_sha256"],
+                            self.cfg["graph"]["evidence_ttl_seconds"])
 
     def _graph_candidate(self, plan, evidence, now):
         self.graph.add_node(plan["candidate_id"], "candidate", f"events/{plan['event_id']}", now,
                             f"{plan['action']} {plan['quantity_contracts']} {plan['instrument']['symbol']} "
-                            f"lcb={plan['metrics']['utility_lcb_quote']}")
+                            f"lcb={plan['metrics']['utility_lcb_quote']}", plan["plan_sha256"],
+                            self.cfg["graph"]["evidence_ttl_seconds"] * 7)
         for e in evidence.values():
             if usable(e) and e["evidence_id"] in plan["evidence_ids"]:
                 self.graph.add_edge(plan["candidate_id"], e["evidence_id"], "derived_from", now, [e["evidence_id"]])
@@ -510,10 +718,17 @@ class PaperRuntime:
         for c in self.cycle_log:
             statuses[c["status"]] = statuses.get(c["status"], 0) + 1
         fills = self.ledger.fills()
+        pl = sorted(self.protect_latency_ms) or [0.0]
+        dl = sorted(self.decision_latency_ms) or [0.0]
+        pick = lambda xs, p: round(xs[min(len(xs) - 1, int(p * len(xs)))], 3)  # noqa: E731
         return {"equity": dstr(acct["equity"]), "wallet": dstr(acct["wallet"]), "risk_state": self.risk.state,
                 "locks": dict(self.risk.locks), "cycles": len(self.cycle_log), "cycle_status_counts": statuses,
                 "fills": len(fills), "fees_paid": dstr(sum((p.fees_paid for p in self.venue.positions.values()), ZERO)),
                 "funding_paid": dstr(sum((p.funding_paid for p in self.venue.positions.values()), ZERO)),
-                "outcomes": len(self.ledger.events("outcome")), "risk_latency": self.risk.latency_summary(),
+                "outcomes": len(self.ledger.events("outcome")), "risk_watchdog_latency": self.risk.latency_summary(),
+                "protect_cycle_latency_ms": {"p50": pick(pl, .5), "p99": pick(pl, .99), "max": pick(pl, 1.0)},
+                "decision_cycle_latency_ms": {"p50": pick(dl, .5), "p99": pick(dl, .99), "max": pick(dl, 1.0)},
+                "selector": self.expected_selector, "phi_features": sorted(self.phi_features),
                 "phi": self.phi.resource_summary() if self.phi else None,
-                "jev": {k: v for k, v in self.jev.stats.items() if k != "latency_ms"}, "graph": self.graph.counts()}
+                "selector_stats": getattr(self.selector, "stats", None), "graph": self.graph.counts(),
+                "admission_rejections": len(self.ledger.events("admission_rejected"))}

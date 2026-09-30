@@ -23,10 +23,11 @@ class EntryBlocked(RuntimeError):
     pass
 
 
-def check_entry(*, cfg, route: str, strategy: str, plan: dict, receipt: dict | None, audit_ok: bool,
-                now: datetime, expected_provider: str) -> tuple[bool, str]:
-    """`expected_provider` is the selector the operator configured for this run (Jev, or the explicit
-    deterministic ablation policy). A receipt from any other provider is a fallback and is blocked."""
+def check_entry(*, cfg, route: str, strategy: str, plan: dict, decision: dict | None, audit_ok: bool,
+                now: datetime, expected_selector: str, expected_backend_id: str) -> tuple[bool, str]:
+    """`expected_selector`/`expected_backend_id` are what the operator configured for this run: the shared
+    local Phi decision maker (one backend/model revision) or the explicit deterministic ablation policy.
+    Any other selector, model or backend is a fallback and is blocked. Legacy Jev receipts never pass."""
     if cfg["autonomous_policy"] != POLICY:
         return False, "POLICY_NOT_AUTONOMOUS_EVIDENCE_V1"
     if not plan.get("risk_increasing"):
@@ -37,14 +38,20 @@ def check_entry(*, cfg, route: str, strategy: str, plan: dict, receipt: dict | N
         return False, f"UNSUPPORTED_STRATEGY:{strategy}"
     if not audit_ok:
         return False, "DURABLE_AUDIT_UNAVAILABLE"
-    if receipt is None:
+    if decision is None:
         return False, "NO_DECISION"
-    if receipt["provider"] != expected_provider:
-        return False, "PROVIDER_MISMATCH_NO_FALLBACK"
-    if receipt["validation_status"] != "valid":
-        return False, f"DECISION_{receipt['validation_status'].upper()}"
-    if receipt["selected_id"] == ABSTAIN or receipt["selected_id"] != plan["candidate_id"]:
+    if decision.get("kind") != "decision_record":
+        return False, "LEGACY_OR_UNKNOWN_DECISION_RECORD"
+    if decision["selector"] != expected_selector:
+        return False, "SELECTOR_MISMATCH_NO_FALLBACK"
+    if decision["backend_id"] != expected_backend_id:
+        return False, "MODEL_OR_BACKEND_MISMATCH"
+    if decision["validation_status"] != "valid":
+        return False, f"DECISION_{decision['validation_status'].upper()}"
+    if decision["selected_id"] == ABSTAIN or decision["selected_id"] != plan["candidate_id"]:
         return False, "DECISION_DID_NOT_SELECT_PLAN"
-    if parse_ts(receipt["expires_at"]) <= now:
+    if decision["candidate_plan_hashes"].get(plan["candidate_id"]) != plan["plan_sha256"]:
+        return False, "PLAN_HASH_NOT_THE_ONE_DECIDED"
+    if parse_ts(decision["expires_at"]) <= now:
         return False, "DECISION_EXPIRED"
     return True, "OK"

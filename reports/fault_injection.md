@@ -1,16 +1,16 @@
 # Fault-injection results
 
-19/19 scenarios passed (22.5 s). SYNTHETIC data, FAKE model adapters.
+24/24 scenarios passed (27.5 s). SYNTHETIC data, FAKE rule-based Phi backend.
 
 | scenario | injected | expected | observed | pass |
 |---|---|---|---|---|
 | baseline | none | one authorized entry | 1 entry intents | yes |
-| jev_timeout | Jev transport mode=timeout | no entry intent; receipt ABSTAIN; NO_NEW_RISK lock | entries=0 receipt_status=['timeout'] locks=['jev_health'] | yes |
-| jev_unavailable | Jev transport mode=unavailable | no entry intent; receipt ABSTAIN; NO_NEW_RISK lock | entries=0 receipt_status=['unavailable'] locks=['jev_health'] | yes |
-| jev_malformed | Jev transport mode=malformed | no entry intent; receipt ABSTAIN; NO_NEW_RISK lock | entries=0 receipt_status=['invalid'] locks=['jev_health'] | yes |
-| jev_bad_label | Jev transport mode=bad_label | no entry intent; receipt ABSTAIN; NO_NEW_RISK lock | entries=0 receipt_status=['invalid'] locks=['jev_health'] | yes |
-| jev_unnormalized | Jev transport mode=unnormalized | no entry intent; receipt ABSTAIN; NO_NEW_RISK lock | entries=0 receipt_status=['invalid'] locks=['jev_health'] | yes |
-| jev_nan | Jev transport mode=nan | no entry intent; receipt ABSTAIN; NO_NEW_RISK lock | entries=0 receipt_status=['invalid'] locks=['jev_health'] | yes |
+| phi_decision_timeout | Phi decision_maker mode=timeout | no entry intent; decision record ABSTAIN; no probability fabricated | entries=0 decision_status=['timeout'] locks=['phi_health'] | yes |
+| phi_decision_oom | Phi decision_maker mode=oom | no entry intent; decision record ABSTAIN; no probability fabricated | entries=0 decision_status=['unavailable'] locks=['phi_health'] | yes |
+| phi_decision_malformed | Phi decision_maker mode=malformed | no entry intent; decision record ABSTAIN; no probability fabricated | entries=0 decision_status=['invalid'] locks=['phi_health'] | yes |
+| phi_decision_invent_candidate | Phi decision_maker mode=invent_candidate | no entry intent; decision record ABSTAIN; no probability fabricated | entries=0 decision_status=['invalid'] locks=['phi_health'] | yes |
+| phi_decision_schema_violation | Phi decision_maker mode=schema_violation | no entry intent; decision record ABSTAIN; no probability fabricated | entries=0 decision_status=['invalid'] locks=['phi_health'] | yes |
+| phi_decision_abstain | Phi decision_maker mode=abstain | no entry intent; decision record ABSTAIN; no probability fabricated | entries=0 decision_status=['valid'] locks=[] | yes |
 | phi_malformed | Phi backend mode=malformed | no entry intent; cycle blocked/abstained | entries=0 blocked_cycles=6 locks=['phi_health'] | yes |
 | phi_timeout | Phi backend mode=timeout | no entry intent; cycle blocked/abstained | entries=0 blocked_cycles=6 locks=['phi_health'] | yes |
 | phi_oom | Phi backend mode=oom | no entry intent; cycle blocked/abstained | entries=0 blocked_cycles=6 locks=['phi_health'] | yes |
@@ -22,4 +22,9 @@
 | duplicate_fill_delivery | every fill batch re-delivers its first fill | fills deduplicated by venue fill ID; local position equals venue | venue_fills=2 ledger_fills=2 discrepancies=[] | yes |
 | missing_required_evidence | market-context connector removed | abstain with REQUIRED_EVIDENCE_MISSING; never zero-filled | entries=0 missing_cycles=6 | yes |
 | operator_halt | operator kill switch before the entry bar | no entries; lock not clearable without operator | entries=0 state=HALTED non_operator_clear=False | yes |
-| alternate_entry_routes | legacy/manual/grid routes and an LLM-fallback provider | only autonomous_cycle with the configured provider passes | routes={'autonomous_cycle': True, 'legacy_ai_filter': False, 'manual_signal': False, 'grid_strategy': False} llm_fallback_allowed=False | yes |
+| alternate_entry_routes_and_fallbacks | legacy/manual/grid routes, another model backend, a selector fallback, a legacy Jev receipt | only autonomous_cycle with the configured Phi backend + selector passes | routes={'autonomous_cycle': True, 'legacy_ai_filter': False, 'manual_signal': False, 'grid_strategy': False} other_model=False selector_fallback=False legacy_jev=False | yes |
+| admission_account_changed | wallet changed between authorization and dispatch | entry rejected at dispatch with ACCOUNT_VERSION_CHANGED / EQUITY_CHANGED; nothing sent | queued=1 rejections=[['ACCOUNT_VERSION_CHANGED', 'EQUITY_CHANGED_OR_UNKNOWN']] venue_orders=0 | yes |
+| admission_price_collar | executable quote moved 2% after authorization | entry rejected at dispatch with PRICE_OUTSIDE_COLLAR; nothing sent | rejections=[['PRICE_OUTSIDE_COLLAR']] venue_orders=0 | yes |
+| slow_phi_does_not_delay_protection | 2 s Phi call in flight + mark near liquidation | reduce-only protective order placed while Phi is still busy | exit_placed=True reaction_ms=20.8 phi_still_busy=True loop_errors=[] | yes |
+| legacy_jev_ledger | ledger containing Open-Jev-era decision_receipt/jev_raw_response records | records identified as legacy, excluded from Phi replay, rejected by the entry gate | detected={'legacy_jev_raw_response_v1': 1, 'legacy_jev_selection_v1': 1} replay_recordings=0 gate_accepts_legacy=False | yes |
+| four_roles_one_backend | normal run + one risk review | screener, analyzer, decision_maker, risk_analyst all served by the same backend/model revision; max concurrent inference 1 | calls_by_role={'screener': 6, 'analyzer': 7, 'decision_maker': 1, 'risk_analyst': 1} producers=['fake_phi_rules_v2@fake'] decision_backends=1 max_concurrency=1 | yes |

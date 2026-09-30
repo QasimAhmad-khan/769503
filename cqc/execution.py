@@ -50,8 +50,8 @@ class Executor:
             self.book[p["symbol"]].realized_pnl -= D(p["payment"])
 
     # ------------------------------------------------------------------ entry persistence (atomic)
-    def persist_authorized_entry(self, *, plan: dict, receipt: dict, auth: dict, per_contract_risk, now: datetime,
-                                 correlation_id: str) -> str:
+    def persist_authorized_entry(self, *, plan: dict, decision: dict, auth: dict, per_contract_risk, now: datetime,
+                                 correlation_id: str, auth_equity) -> str:
         """Decision, authorization, reservation and outbox intent in one transaction."""
         inst = self.instruments[plan["instrument"]["symbol"].replace("-PERP", "")]
         side = "buy" if plan["position_side"] == "long" else "sell"
@@ -65,7 +65,8 @@ class Executor:
                   "purpose": "entry" if plan["risk_increasing"] else "discretionary_reduce", "symbol": inst.key,
                   "side": side, "qty": plan["quantity_contracts"], "price_limit": limit,
                   "stop_price": plan["stop_price"], "order_type": "limit", "reduce_only": int(plan["reduce_only"]),
-                  "status": "queued", "expires_at": auth["expires_at"], "created_ts": iso(now), "updated_ts": iso(now)}
+                  "status": "queued", "expires_at": auth["expires_at"], "created_ts": iso(now), "updated_ts": iso(now),
+                  "auth_account_version": auth["account_state_version"], "auth_equity": dstr(auth_equity)}
         reservation = None
         if plan["risk_increasing"]:
             reservation = {"reservation_id": stable_id("res", intent_id), "symbol": inst.key,
@@ -73,7 +74,7 @@ class Executor:
                            "notional_per_contract": str(inst.multiplier * D(plan["price_max"])),
                            "qty_reserved": plan["quantity_contracts"]}
         with self.ledger.tx():
-            self.ledger.append("decision_receipt", receipt, now, correlation_id)
+            self.ledger.append("decision_record", decision, now, correlation_id)
             self.ledger.append("risk_authorization", auth, now, correlation_id)
             self.ledger.create_intent(intent, reservation, self.token)
             self.ledger.append("intent_created", {"intent_id": intent_id, "authorization_id": auth["authorization_id"],
@@ -89,7 +90,8 @@ class Executor:
                                    "side": side, "qty": dstr(qty), "price_limit": None,
                                    "stop_price": dstr(stop_price) if stop_price is not None else None,
                                    "order_type": order_type, "reduce_only": 1, "status": "queued", "expires_at": None,
-                                   "created_ts": iso(now), "updated_ts": iso(now)}, None, self.token)
+                                   "created_ts": iso(now), "updated_ts": iso(now), "auth_account_version": None,
+                                   "auth_equity": None}, None, self.token)
         self.ledger.append("protective_action", {"intent_id": intent_id, "symbol": symbol, "side": side,
                                                  "qty": dstr(qty), "type": order_type, "reason": reason,
                                                  "stop_price": dstr(stop_price) if stop_price is not None else None},
@@ -97,12 +99,18 @@ class Executor:
         return intent_id
 
     # ------------------------------------------------------------------ dispatch
-    def dispatch(self, now: datetime, submission_check) -> list[str]:
+    def dispatch(self, now: datetime, admission) -> list[str]:
+        """`admission(intent, now) -> (ok, reasons)` must re-validate on fresh state right before sending."""
         sent = []
         for it in self.ledger.intents(statuses=["queued"]):
-            ok, reason = submission_check(it, now)
+            ok, reasons = admission(it, now)
+            if isinstance(reasons, str):
+                reasons = [reasons]
             if not ok:
-                self._terminal(it, "rejected" if reason != "AUTHORIZATION_EXPIRED" else "expired", now, reason)
+                self.ledger.append("admission_rejected", {"intent_id": it["intent_id"], "purpose": it["purpose"],
+                                                          "reasons": reasons[:12]}, now, it["intent_id"])
+                expired = reasons == ["AUTHORIZATION_EXPIRED"]
+                self._terminal(it, "expired" if expired else "rejected", now, ",".join(reasons)[:200])
                 continue
             self.ledger.update_intent(it["intent_id"], self.token, now, status="submitting",
                                       submit_attempts=it["submit_attempts"] + 1)
@@ -229,11 +237,12 @@ class Executor:
         tick = self.instruments[symbol].price_tick
         stop_price = round_price(D(stop_price), tick, ROUND_FLOOR if pos > 0 else ROUND_CEILING)
         stops = self.working_stops(symbol)
-        good = [s for s in stops if D(s["qty"]) - D(s["filled_qty"]) == qty and s["side"] == side]
+        good = [s for s in stops if D(s["qty"]) - D(s["filled_qty"]) == qty and s["side"] == side
+                and s["stop_price"] is not None and D(s["stop_price"]) == stop_price]
         if good:
             return good[0]["intent_id"]
         new_id = self.create_protective_intent(symbol, side, qty, "stop_market", now, "protect_position", stop_price)
-        self.dispatch(now, lambda it, t: (True, "OK"))
+        self.dispatch_one(new_id, now)
         if self.ledger.intent(new_id)["status"] == "acknowledged":
             for old in stops:  # cancel stale stops only after the replacement is accepted
                 self.request_cancel(old["intent_id"], now)
@@ -248,36 +257,55 @@ class Executor:
             return None
         side = "sell" if pos > 0 else "buy"
         intent_id = self.create_protective_intent(symbol, side, qty, "market", now, reason)
-        self.dispatch(now, lambda it, t: (True, "OK"))
+        self.dispatch_one(intent_id, now)
         return intent_id
 
-    def pending_reductions(self) -> dict:
+    def dispatch_one(self, intent_id: str, now: datetime):
+        """Send one protective intent immediately; never waits behind or admits queued entries."""
+        it = self.ledger.intent(intent_id)
+        if it is None or it["status"] != "queued" or it["purpose"] != "protective":
+            return
+        self.ledger.update_intent(intent_id, self.token, now, status="submitting", submit_attempts=it["submit_attempts"] + 1)
+        try:
+            ack = self.venue.submit(it["client_order_id"], it["symbol"], it["side"], D(it["qty"]), it["order_type"],
+                                    it["price_limit"], it["stop_price"], True, now)
+            self.ledger.update_intent(intent_id, self.token, now, status="acknowledged", venue_order_id=ack["venue_order_id"])
+        except (VenueTimeout, VenueUnavailable) as exc:
+            self.ledger.update_intent(intent_id, self.token, now, status="unknown")
+            self.ledger.append("order_unknown", {"intent_id": intent_id, "error": type(exc).__name__}, now, intent_id)
+        except VenueReject as exc:
+            self._terminal(it, "rejected", now, str(exc))
+
+    def pending_reductions(self, exclude_intent: str | None = None) -> dict:
         out = {}
         for it in self.ledger.intents(statuses=sorted(OPEN_STATUSES)):
+            if it["intent_id"] == exclude_intent:
+                continue
             if it["reduce_only"] and it["order_type"] != "stop_market":
                 out[it["symbol"]] = out.get(it["symbol"], ZERO) + D(it["qty"]) - D(it["filled_qty"])
         return out
 
     # ------------------------------------------------------------------ account view for risk
-    def account_view(self, now: datetime, quote_ts: dict) -> AccountView:
+    def account_view(self, now: datetime, quote_ts: dict, exclude_intent: str | None = None) -> AccountView:
+        """Fresh account view. `version` covers risk-relevant account truth (positions, wallet, fill and funding
+        cursors) — not order bookkeeping, which the precheck accounts for through reservations."""
         acct = self.venue.account()
         marks = {s: self.venue.mark(s) or ZERO for s in self.instruments}
         stops = {}
         for sym in self.instruments:
             verified = [s for s in self.working_stops(sym) if s["status"] in ("acknowledged", "partially_filled")]
             stops[sym] = D(verified[0]["stop_price"]) if verified else None
-        reservations = self.ledger.active_reservations()
-        open_intents = [(i["intent_id"], i["status"], i["filled_qty"]) for i in self.ledger.intents(statuses=sorted(OPEN_STATUSES))]
+        reservations = [r for r in self.ledger.active_reservations() if r["intent_id"] != exclude_intent]
         positions = {s: {"contracts": self.book[s].contracts, "entry_price": self.book[s].entry_price,
                          "liquidation_price": acct["positions"][s]["liquidation_price"]} for s in self.instruments}
         version = "acct_" + sha256_hex(canonical_json({
-            "pos": {s: dstr(p["contracts"]) for s, p in positions.items()}, "open": open_intents,
-            "res": sorted((r["reservation_id"], r["qty_reserved"]) for r in reservations),
-            "fills": self.fill_cursor}))[:20]
+            "pos": {s: dstr(p["contracts"]) for s, p in positions.items()}, "wallet": dstr(acct["wallet"]),
+            "fills": self.fill_cursor, "funding": self.funding_cursor}))[:20]
         entry_ts = self.ledger.get("entry_ts", {}) or {}
+        pending = self.pending_reductions(exclude_intent)
         return AccountView(ts=acct["ts"] or now, equity=acct["equity"], wallet=acct["wallet"], positions=positions,
                            marks=marks, quote_ts=quote_ts, stops=stops, reservations=reservations,
-                           pending_reductions=self.pending_reductions(), version=version,
+                           pending_reductions=pending, version=version,
                            entry_ts={k: parse_ts(v) for k, v in entry_ts.items()})
 
     def track_entry_times(self, now: datetime):
