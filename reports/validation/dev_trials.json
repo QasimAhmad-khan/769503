@@ -1,0 +1,608 @@
+{
+  "trials": [
+    {
+      "trial_id": "T00",
+      "params": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "2.0",
+        "trend_entry_z": 0.5
+      },
+      "objective_dev_net_trade_pnl": 35.1776,
+      "fold_pnl": [
+        -30.8392,
+        4.2441,
+        70.3916,
+        -8.6189,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": 35.1775,
+        "net_return_pct": 0.3518,
+        "mean_daily": 0.8181,
+        "sd_daily": 16.4393,
+        "sharpe_daily": 0.0498,
+        "max_drawdown": 75.6944,
+        "max_drawdown_pct": 0.7486,
+        "longest_under_water_days": 26,
+        "cvar95_daily": -26.8169,
+        "worst_day": -27.9623
+      },
+      "trades": {
+        "trades": 51,
+        "expectancy": 0.6898,
+        "median_trade": 0.0556,
+        "win_fraction": 0.5294,
+        "profit_factor": 1.1458,
+        "worst_trade": -24.0843,
+        "best_trade": 26.0588
+      },
+      "effective_trades": 44,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 155.7,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T01",
+      "params": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 0.5
+      },
+      "objective_dev_net_trade_pnl": 14.8137,
+      "fold_pnl": [
+        -30.3697,
+        -9.7032,
+        54.8866,
+        0,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": 14.8138,
+        "net_return_pct": 0.1481,
+        "mean_daily": 0.3445,
+        "sd_daily": 7.9307,
+        "sharpe_daily": 0.0434,
+        "max_drawdown": 46.9593,
+        "max_drawdown_pct": 0.4696,
+        "longest_under_water_days": 12,
+        "cvar95_daily": -16.9839,
+        "worst_day": -22.7941
+      },
+      "trades": {
+        "trades": 18,
+        "expectancy": 0.823,
+        "median_trade": 3.0707,
+        "win_fraction": 0.6111,
+        "profit_factor": 1.1387,
+        "worst_trade": -23.501,
+        "best_trade": 28.3394
+      },
+      "effective_trades": 15,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 153.9,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T02",
+      "params": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "2.5",
+        "trend_entry_z": 0.5
+      },
+      "objective_dev_net_trade_pnl": -28.5556,
+      "fold_pnl": [
+        0,
+        -3.4989,
+        -25.0567,
+        0,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": -28.5556,
+        "net_return_pct": -0.2856,
+        "mean_daily": -0.6641,
+        "sd_daily": 3.8916,
+        "sharpe_daily": -0.1706,
+        "max_drawdown": 28.5556,
+        "max_drawdown_pct": 0.2856,
+        "longest_under_water_days": 33,
+        "cvar95_daily": -9.6564,
+        "worst_day": -25.4703
+      },
+      "trades": {
+        "trades": 8,
+        "expectancy": -3.5694,
+        "median_trade": -2.1571,
+        "win_fraction": 0.25,
+        "profit_factor": 0.5013,
+        "worst_trade": -24.2714,
+        "best_trade": 22.0722
+      },
+      "effective_trades": 6,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 150.8,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T03",
+      "params": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 0.75
+      },
+      "objective_dev_net_trade_pnl": -77.5486,
+      "fold_pnl": [
+        -0.1093,
+        13.6123,
+        23.0359,
+        -114.0875,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": -77.5485,
+        "net_return_pct": -0.7755,
+        "mean_daily": -1.8035,
+        "sd_daily": 22.9402,
+        "sharpe_daily": -0.0786,
+        "max_drawdown": 244.601,
+        "max_drawdown_pct": 2.4058,
+        "longest_under_water_days": 26,
+        "cvar95_daily": -58.2475,
+        "worst_day": -93.6121
+      },
+      "trades": {
+        "trades": 50,
+        "expectancy": -1.551,
+        "median_trade": -0.3972,
+        "win_fraction": 0.48,
+        "profit_factor": 0.8131,
+        "worst_trade": -24.1392,
+        "best_trade": 30.1416
+      },
+      "effective_trades": 38,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 111.3,
+      "meets_constraints": false
+    },
+    {
+      "trial_id": "T04",
+      "params": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 0.75
+      },
+      "objective_dev_net_trade_pnl": 38.6063,
+      "fold_pnl": [
+        0,
+        -13.772,
+        52.3783,
+        0,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": 38.6064,
+        "net_return_pct": 0.3861,
+        "mean_daily": 0.8978,
+        "sd_daily": 7.0658,
+        "sharpe_daily": 0.1271,
+        "max_drawdown": 13.772,
+        "max_drawdown_pct": 0.1377,
+        "longest_under_water_days": 4,
+        "cvar95_daily": -4.5907,
+        "worst_day": -13.772
+      },
+      "trades": {
+        "trades": 11,
+        "expectancy": 3.5097,
+        "median_trade": 10.4601,
+        "win_fraction": 0.6364,
+        "profit_factor": 1.5159,
+        "worst_trade": -24.2079,
+        "best_trade": 29.2301
+      },
+      "effective_trades": 8,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 106.3,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T05",
+      "params": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "2.0",
+        "trend_entry_z": 0.75
+      },
+      "objective_dev_net_trade_pnl": -2.1366,
+      "fold_pnl": [
+        0,
+        0,
+        -2.1366,
+        0,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": -2.1366,
+        "net_return_pct": -0.0214,
+        "mean_daily": -0.0497,
+        "sd_daily": 3.8246,
+        "sharpe_daily": -0.013,
+        "max_drawdown": 18.5637,
+        "max_drawdown_pct": 0.1853,
+        "longest_under_water_days": 27,
+        "cvar95_daily": -6.1879,
+        "worst_day": -18.5637
+      },
+      "trades": {
+        "trades": 8,
+        "expectancy": -0.2671,
+        "median_trade": 1.4038,
+        "win_fraction": 0.625,
+        "profit_factor": 0.9585,
+        "worst_trade": -23.0964,
+        "best_trade": 21.5919
+      },
+      "effective_trades": 6,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 108.3,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T06",
+      "params": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "2.5",
+        "trend_entry_z": 0.75
+      },
+      "objective_dev_net_trade_pnl": 12.5812,
+      "fold_pnl": [
+        -10.0972,
+        5.4122,
+        30.4157,
+        -13.1495,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": 12.5812,
+        "net_return_pct": 0.1258,
+        "mean_daily": 0.2926,
+        "sd_daily": 9.5303,
+        "sharpe_daily": 0.0307,
+        "max_drawdown": 63.7809,
+        "max_drawdown_pct": 0.633,
+        "longest_under_water_days": 26,
+        "cvar95_daily": -19.0872,
+        "worst_day": -21.1122
+      },
+      "trades": {
+        "trades": 34,
+        "expectancy": 0.37,
+        "median_trade": 1.2528,
+        "win_fraction": 0.5882,
+        "profit_factor": 1.0842,
+        "worst_trade": -22.9194,
+        "best_trade": 20.6739
+      },
+      "effective_trades": 30,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 112.6,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T07",
+      "params": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 1.0
+      },
+      "objective_dev_net_trade_pnl": -18.8277,
+      "fold_pnl": [
+        0,
+        0,
+        -19.2433,
+        13.8878,
+        -13.4722,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": -18.8277,
+        "net_return_pct": -0.1883,
+        "mean_daily": -0.4379,
+        "sd_daily": 12.9611,
+        "sharpe_daily": -0.0338,
+        "max_drawdown": 79.3826,
+        "max_drawdown_pct": 0.7901,
+        "longest_under_water_days": 24,
+        "cvar95_daily": -30.1607,
+        "worst_day": -40.2089
+      },
+      "trades": {
+        "trades": 30,
+        "expectancy": -0.6276,
+        "median_trade": -0.6697,
+        "win_fraction": 0.5,
+        "profit_factor": 0.926,
+        "worst_trade": -24.0012,
+        "best_trade": 34.3944
+      },
+      "effective_trades": 24,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 81.4,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T08",
+      "params": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 1.0
+      },
+      "objective_dev_net_trade_pnl": -69.6143,
+      "fold_pnl": [
+        0,
+        0,
+        -26.2083,
+        -43.406,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": -69.6143,
+        "net_return_pct": -0.6961,
+        "mean_daily": -1.6189,
+        "sd_daily": 5.9477,
+        "sharpe_daily": -0.2722,
+        "max_drawdown": 69.6143,
+        "max_drawdown_pct": 0.6961,
+        "longest_under_water_days": 27,
+        "cvar95_daily": -22.9627,
+        "worst_day": -26.2083
+      },
+      "trades": {
+        "trades": 4,
+        "expectancy": -17.4036,
+        "median_trade": -21.703,
+        "win_fraction": 0.0,
+        "profit_factor": 0.0,
+        "worst_trade": -23.9013,
+        "best_trade": -2.3071
+      },
+      "effective_trades": 4,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 83.1,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T09",
+      "params": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "2.0",
+        "trend_entry_z": 1.0
+      },
+      "objective_dev_net_trade_pnl": -62.916,
+      "fold_pnl": [
+        0,
+        0,
+        -31.9276,
+        -20.51,
+        -10.4784,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": -62.916,
+        "net_return_pct": -0.6292,
+        "mean_daily": -1.4632,
+        "sd_daily": 11.0453,
+        "sharpe_daily": -0.1325,
+        "max_drawdown": 113.6286,
+        "max_drawdown_pct": 1.1339,
+        "longest_under_water_days": 24,
+        "cvar95_daily": -30.0917,
+        "worst_day": -37.6746
+      },
+      "trades": {
+        "trades": 26,
+        "expectancy": -2.4198,
+        "median_trade": -3.2781,
+        "win_fraction": 0.5,
+        "profit_factor": 0.6928,
+        "worst_trade": -23.4792,
+        "best_trade": 26.2053
+      },
+      "effective_trades": 21,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 84.3,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T10",
+      "params": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "2.0",
+        "trend_entry_z": 1.0
+      },
+      "objective_dev_net_trade_pnl": -10.459,
+      "fold_pnl": [
+        0,
+        0,
+        -10.459,
+        0,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": -10.459,
+        "net_return_pct": -0.1046,
+        "mean_daily": -0.2432,
+        "sd_daily": 1.595,
+        "sharpe_daily": -0.1525,
+        "max_drawdown": 10.459,
+        "max_drawdown_pct": 0.1046,
+        "longest_under_water_days": 27,
+        "cvar95_daily": -3.4863,
+        "worst_day": -10.459
+      },
+      "trades": {
+        "trades": 1,
+        "expectancy": -10.459,
+        "median_trade": -10.459,
+        "win_fraction": 0.0,
+        "profit_factor": 0.0,
+        "worst_trade": -10.459,
+        "best_trade": -10.459
+      },
+      "effective_trades": 1,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 81.3,
+      "meets_constraints": true
+    },
+    {
+      "trial_id": "T11",
+      "params": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "2.5",
+        "trend_entry_z": 1.0
+      },
+      "objective_dev_net_trade_pnl": -17.6867,
+      "fold_pnl": [
+        0,
+        0,
+        -17.6867,
+        0,
+        0,
+        0
+      ],
+      "daily": {
+        "days": 43,
+        "net_pnl": -17.6867,
+        "net_return_pct": -0.1769,
+        "mean_daily": -0.4113,
+        "sd_daily": 2.6972,
+        "sharpe_daily": -0.1525,
+        "max_drawdown": 17.6867,
+        "max_drawdown_pct": 0.1769,
+        "longest_under_water_days": 27,
+        "cvar95_daily": -5.8956,
+        "worst_day": -17.6867
+      },
+      "trades": {
+        "trades": 1,
+        "expectancy": -17.6867,
+        "median_trade": -17.6867,
+        "win_fraction": 0.0,
+        "profit_factor": 0.0,
+        "worst_trade": -17.6867,
+        "best_trade": -17.6867
+      },
+      "effective_trades": 1,
+      "invariants_passed": true,
+      "invariant_violations": [],
+      "wall_seconds": 81.0,
+      "meets_constraints": true
+    }
+  ],
+  "walk_forward_selection": [
+    {
+      "fold": 1,
+      "selected": "T02",
+      "train_score": 0,
+      "oos_fold_pnl": -3.4989
+    },
+    {
+      "fold": 2,
+      "selected": "T03",
+      "train_score": 13.5031,
+      "oos_fold_pnl": 23.0359
+    },
+    {
+      "fold": 3,
+      "selected": "T00",
+      "train_score": 65.2807,
+      "oos_fold_pnl": -8.6189
+    },
+    {
+      "fold": 4,
+      "selected": "T04",
+      "train_score": 38.6064,
+      "oos_fold_pnl": 0
+    },
+    {
+      "fold": 5,
+      "selected": "T04",
+      "train_score": 38.6064,
+      "oos_fold_pnl": 0
+    }
+  ],
+  "walk_forward_oos_total": 10.9181,
+  "pbo": {
+    "pbo": 0.9143,
+    "combinations": 70,
+    "median_logit": -1.7047,
+    "best_is_below_median_oos_fraction": 0.9143,
+    "blocks": 8,
+    "assumptions": "CSCV with contiguous time blocks; performance = mean daily PnL per block set"
+  },
+  "dsr_dev_selected": {
+    "dsr": 0.2699,
+    "sharpe_daily": 0.1271,
+    "sr0_daily": 0.1936,
+    "trials": 12,
+    "T_days": 43,
+    "skew": 4.946,
+    "kurtosis": 31.444,
+    "assumptions": "daily Sharpe; trials = all logged parameter sets; iid-ish daily returns (weak with few days)"
+  },
+  "selected": {
+    "trial_id": "T04",
+    "quant": {
+      "lcb_z": 2.33,
+      "stop_vol_multiple": "1.5",
+      "trend_entry_z": 0.75
+    },
+    "selector": "deterministic_rank_v1 (P0) and phi (P3) evaluated",
+    "manifest_sha256": "1d3653404bd9588eb311f0be0af9aba1af5c90329633a0879d8a2026d8548dca"
+  },
+  "no_verified_edge_on_dev": false,
+  "trial_sharpes_daily": [
+    0.0498,
+    0.0434,
+    -0.1706,
+    -0.0786,
+    0.1271,
+    -0.013,
+    0.0307,
+    -0.0338,
+    -0.2722,
+    -0.1325,
+    -0.1525,
+    -0.1525
+  ]
+}

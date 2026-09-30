@@ -1,0 +1,222 @@
+{
+  "candidate_rules": "quant.build_entry_candidates: trend_breakout_v1, funding_crowding_v1; sizes 1.0/0.5; utility LCB > hurdle; effective samples >= min",
+  "constraints": {
+    "dev_max_drawdown_pct": 1.5,
+    "invariant_violations": 0
+  },
+  "costs": {
+    "fill_model": "marketable limit from next full 1-min bar, liquidity-capped; stops gap through",
+    "funding": "8-hourly settlement on position at settlement",
+    "maker_fee_rate": "0.0002",
+    "spread": "from data (bid/ask per bar)",
+    "stop_slippage_bps": "10",
+    "taker_fee_rate": "0.0005"
+  },
+  "data": {
+    "availability": {
+      "bars": "available at bar end + 1 s",
+      "funding_estimate": "known at bar end; settled every 8 h",
+      "onchain_fixture": "block time + 6 confirmations (synthetic)"
+    },
+    "days": 65,
+    "fixture_sha256": "bceaaecb95815319d710a80c998bd5a6ab5c9e1d7fee9302ef210fad108ed71c",
+    "generator": "cqc.market.synthetic_market",
+    "kind": "synthetic",
+    "note": "fresh seed; the 30-day engineering fixture (seed 7) inspected earlier is NOT reused",
+    "required_for_investment_gates": [
+      "exchange trades, L2 order books, mark/index, funding with capture timestamps",
+      "admissible on-chain captures with availability proof",
+      "real pinned Phi model on target GPU"
+    ],
+    "seed": 2026,
+    "start": "2026-03-01T00:00:00+00:00"
+  },
+  "frozen_at": "2026-09-30T20:43:46.432991+00:00",
+  "gates": {
+    "D1_real_point_in_time_data": "alpha tests on real captured data",
+    "E1_holdout_net_positive": "holdout net PnL > 0 AND 90% CI of mean daily PnL lower bound > 0",
+    "E2_sample_size": "holdout effective trades >= 30 (else INCONCLUSIVE)",
+    "E3_deflated_sharpe": "DSR >= 0.95 using all logged trials",
+    "E4_pbo": "PBO <= 0.20 on the dev trial matrix",
+    "E5_tail_risk": "holdout max drawdown <= 3% equity AND daily CVaR95 >= -1% equity",
+    "E6_cost_robustness": "cost Monte Carlo P(total < 0) <= 0.20 on holdout trades",
+    "E7_phi_incremental_value": "P3 - P0 paired daily PnL 90% CI lower bound > 0 on holdout",
+    "H1_safety_invariants": "zero violations on every run",
+    "R1_real_phi_measured": "four-role schema validity >= 99%, VRAM/latency within budget, quantized vs reference agreement measured"
+  },
+  "holdout": {
+    "max_evaluations": 1
+  },
+  "horizon": {
+    "decision_bar_seconds": 900,
+    "forecast_and_max_holding_seconds": 14400
+  },
+  "manifest_sha256": "1d3653404bd9588eb311f0be0af9aba1af5c90329633a0879d8a2026d8548dca",
+  "manifest_version": "research_v1",
+  "max_trials": 12,
+  "parameter_space": {
+    "lcb_z": [
+      1.64,
+      2.33
+    ],
+    "stop_vol_multiple": [
+      "1.5",
+      "2.0",
+      "2.5"
+    ],
+    "trend_entry_z": [
+      0.5,
+      0.75,
+      1.0
+    ]
+  },
+  "periods": {
+    "dev": [
+      7,
+      49
+    ],
+    "dev_fold_days": 7,
+    "embargo_gap": [
+      49,
+      50
+    ],
+    "holdout": [
+      50,
+      64
+    ],
+    "prospective_paper": "after holdout; never in this fixture",
+    "warmup": [
+      0,
+      7
+    ]
+  },
+  "phi": {
+    "backend_for_this_program": "fake_phi_rules_v2 (reproduces the deterministic ranker by construction)"
+  },
+  "primary_objective": "sum over purged dev folds of net trade PnL after all costs (USDT)",
+  "risk_constraints": {
+    "daily_loss_fraction_stop_new_risk": 0.01,
+    "max_aggregate_reserved_stop_risk_fraction": 0.01,
+    "max_equity_fraction_at_stop_per_new_trade": 0.0025,
+    "max_gross_notional_over_equity": 1.0,
+    "max_stress_loss_fraction": 0.02,
+    "max_symbol_notional_over_equity": 0.25,
+    "peak_drawdown_fraction_reduce_only": 0.03
+  },
+  "selection_rule": "argmax objective among constraint-satisfying trials; if none > 0, keep baseline T00 and record NO_VERIFIED_EDGE_ON_DEV (gates are not weakened)",
+  "splits": {
+    "funding_interval_seconds": 28800,
+    "label_horizon_seconds": 14400,
+    "method": "purged by trade close time + embargo",
+    "onchain_availability_lag_seconds": 3600
+  },
+  "statistics": {
+    "ci": "stationary bootstrap, mean block 3 days, 5000 reps, 90%",
+    "dsr": "Bailey & Lopez de Prado 2014",
+    "min_effective_trades": 30,
+    "pbo": "CSCV, 8 contiguous blocks, 70 combinations"
+  },
+  "status": "ENGINEERING DEMONSTRATION: synthetic data + fake Phi. Investment gates require real data and real Phi.",
+  "trials": [
+    {
+      "quant": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "2.0",
+        "trend_entry_z": 0.5
+      },
+      "trial_id": "T00"
+    },
+    {
+      "quant": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 0.5
+      },
+      "trial_id": "T01"
+    },
+    {
+      "quant": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "2.5",
+        "trend_entry_z": 0.5
+      },
+      "trial_id": "T02"
+    },
+    {
+      "quant": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 0.75
+      },
+      "trial_id": "T03"
+    },
+    {
+      "quant": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 0.75
+      },
+      "trial_id": "T04"
+    },
+    {
+      "quant": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "2.0",
+        "trend_entry_z": 0.75
+      },
+      "trial_id": "T05"
+    },
+    {
+      "quant": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "2.5",
+        "trend_entry_z": 0.75
+      },
+      "trial_id": "T06"
+    },
+    {
+      "quant": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 1.0
+      },
+      "trial_id": "T07"
+    },
+    {
+      "quant": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "1.5",
+        "trend_entry_z": 1.0
+      },
+      "trial_id": "T08"
+    },
+    {
+      "quant": {
+        "lcb_z": 1.64,
+        "stop_vol_multiple": "2.0",
+        "trend_entry_z": 1.0
+      },
+      "trial_id": "T09"
+    },
+    {
+      "quant": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "2.0",
+        "trend_entry_z": 1.0
+      },
+      "trial_id": "T10"
+    },
+    {
+      "quant": {
+        "lcb_z": 2.33,
+        "stop_vol_multiple": "2.5",
+        "trend_entry_z": 1.0
+      },
+      "trial_id": "T11"
+    }
+  ],
+  "universe": [
+    "BTCUSDT-PERP linear, 0.001 BTC/contract",
+    "ETHUSDT-PERP linear, 0.01 ETH/contract"
+  ]
+}

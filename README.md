@@ -56,7 +56,19 @@ python -m cqc evaluate                 # paired ablations P0..P4 -> reports/eval
 python -m cqc soak --days 14           # simulated-time soak (RSS, DB growth, graph size, latencies)
 python -m cqc readiness                # lists every unresolved live/promotion blocker (exit 1)
 python -m cqc check-phi                # GPU host only: one call per role through the configured Phi server
+python -m cqc bench-phi --endpoint reference=URL --endpoint candidate=URL --ledger LEDGER   # GPU host only
+python -m cqc validate --phase all     # research program: frozen manifest, trials, robustness, ONE sealed holdout
 ```
+
+**Supported platform.** Linux, Python 3.10+ is the tested target, and all results were produced
+there. `python -m cqc --help` no longer needs the Unix-only `resource` module: it is imported lazily,
+and on Windows peak RSS is read through `PeakWorkingSetSize`. There is a test for this. Windows
+itself has not been run.
+
+**Validation program.** `docs/VALIDATION_REPORT.md` has the gate table and all results,
+`research/` holds the frozen manifest and the hash-chained trial log, and `reports/validation/`
+holds the raw JSON. The final holdout has already been evaluated once, and the program refuses to
+evaluate it again. Any new study needs a new versioned manifest.
 
 ## Guarantees enforced in code (and tested)
 
